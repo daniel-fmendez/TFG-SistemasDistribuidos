@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package inter;
+
+option go_package = "./federated_sum";
+service Processor {
+  rpc ComputeSum (SumRequest) returns (SumReply);
+}
+
+message SumRequest {
+  repeated int32 numbers = 1;
+}
+
+message SumReply {
+  int32 result = 1;
+}

@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package training;
+
+service MetricsService {
+  rpc ReportMetrics(MetricData) returns (Ack);
+  rpc GetAllMetrics(Empty) returns (MetricsList);
+  rpc ReportTrainingComplete(TrainingResult) returns (Ack);
+}
+
+message Empty {}
+
+message Ack {
+  bool success = 1;
+  string message = 2;
+}
+
+message MetricData {
+  string worker_id = 1;
+  int32 epoch = 2;
+  int32 step = 3;
+  float loss = 4;
+  float accuracy = 5;
+  string timestamp = 6;
+  string model_type = 7; // "general", "technical", "legal"
+}
+
+message TrainingResult {
+  string worker_id = 1;
+  string model_type = 2;
+  float final_loss = 3;
+  float final_accuracy = 4;
+  int32 total_epochs = 5;
+  string model_path = 6; // Donde se guardó el modelo
+}
+
+message MetricsList {
+  repeated MetricData metrics = 1;
+}

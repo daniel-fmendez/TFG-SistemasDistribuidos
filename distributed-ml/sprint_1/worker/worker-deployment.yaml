@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: my-worker:v1
+          env:
+          - name: PYTHONUNBUFFERED
+            value: "1"
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5000

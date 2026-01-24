@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package federated_sum;
+
+option go_package = "./proto";
+service Worker {
+  rpc TrainBatch(TrainRequest) returns (TrainResponse);
+  rpc UpdateWeights(WeightRequest) returns (WeightAck);
+}
+
+message TrainRequest {
+    repeated float data = 1;
+    repeated int32 labels = 2;
+    int32 batch_size = 3;
+}
+
+message TrainResponse {
+    map<string, Gradients> gradients = 1;
+    double loss = 2;
+}
+
+message Gradients {
+    repeated float values = 1;
+    repeated int32 shape = 2;
+}
+
+message WeightRequest {
+    map<string, Weights> weights = 1;
+}
+message Weights {
+    repeated float values = 1;
+    repeated int32 shape = 2;
+}
+
+message WeightAck {
+    bool success = 1;
+}
