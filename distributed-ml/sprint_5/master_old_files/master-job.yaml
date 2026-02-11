@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: master-job
+spec:
+  template:
+    metadata:
+      labels:
+        app: master
+    spec:
+      serviceAccountName: master-sa 
+      containers:
+        - name: master
+          image: my-master:v5
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 50051
+      restartPolicy: Never
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: master-service
+spec:
+  selector:
+    app: master
+  ports:
+    - port: 50051
+      targetPort: 50051

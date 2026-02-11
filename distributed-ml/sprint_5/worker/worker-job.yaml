@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: worker-job-
+spec:
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: my-worker:v5
+          env:
+            - name: MODEL_TYPE
+              value: "general"
+
+            - name: PYTHONUNBUFFERED
+              value: "1"
+          imagePullPolicy: Never
+          volumeMounts:
+            - mountPath: /app/models
+              name: worker-storage
+      restartPolicy: Never
+      volumes:
+        - name: worker-storage
+          persistentVolumeClaim:
+            claimName: server-pvc

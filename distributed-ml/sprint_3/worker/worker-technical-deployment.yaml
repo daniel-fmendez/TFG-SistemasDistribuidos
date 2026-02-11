@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: worker-job-technical
+spec:
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: my-worker:v3
+          resources:
+            requests:
+              cpu: "2"
+            limits:
+              cpu: "3"
+          env:
+            - name: MODEL_TYPE
+              value: "technical"
+
+            - name: PYTHONUNBUFFERED
+              value: "1"
+          imagePullPolicy: Never
+          volumeMounts:
+            - mountPath: /app/models
+              name: worker-storage
+      restartPolicy: Never
+      volumes:
+        - name: worker-storage
+          persistentVolumeClaim:
+            claimName: my-pv-claim

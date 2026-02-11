@@ -16,8 +16,8 @@ spec:
         - name: worker
           image: my-worker:v1
           env:
-          - name: PYTHONUNBUFFERED
-            value: "1"
+            - name: PYTHONUNBUFFERED
+              value: "1"
           imagePullPolicy: Never
           ports:
             - containerPort: 5000

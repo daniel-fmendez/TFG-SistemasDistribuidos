@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: master-job
+spec:
+  template:
+    metadata:
+      labels:
+        app: master
+    spec:
+      containers:
+        - name: master
+          image: my-master:v3
+          resources:
+            requests:
+              cpu: "2"
+            limits:
+              cpu: "3"
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 50051
+          volumeMounts:
+            - mountPath: /app/models
+              name: master-storage
+      restartPolicy: Never
+      volumes:
+        - name: master-storage
+          persistentVolumeClaim:
+            claimName: my-pv-claim
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: master-service
+spec:
+  selector:
+    app: master
+  ports:
+    - port: 50051
+      targetPort: 50051

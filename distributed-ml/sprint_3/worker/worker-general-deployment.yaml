@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: worker-job-general
+spec:
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: my-worker:v3
+          resources:
+            limits:
+              nvidia.com/gpu: 1
+          env:
+            - name: MODEL_TYPE
+              value: "general"
+
+            - name: PYTHONUNBUFFERED
+              value: "1"
+          imagePullPolicy: Never
+          volumeMounts:
+            - mountPath: /app/models
+              name: worker-storage
+      restartPolicy: Never
+      volumes:
+        - name: worker-storage
+          persistentVolumeClaim:
+            claimName: my-pv-claim
