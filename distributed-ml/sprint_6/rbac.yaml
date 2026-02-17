@@ -1,0 +1,50 @@
+# ServiceAccount para el master
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: master-sa
+  namespace: default
+
+---
+# Role con permisos necesarios
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: master-role
+  namespace: default
+rules:
+  # Permisos para PVCs
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "create", "delete", "watch"]
+
+  # Permisos para Jobs
+  - apiGroups: ["batch"]
+    resources: ["jobs", "jobs/status"]
+    verbs: ["get", "list", "create", "delete", "watch"]
+
+  # Permisos para Pods (si necesitas crear workers)
+  - apiGroups: [""]
+    resources: ["pods", "pods/status", "pods/log"]
+    verbs: ["get", "list", "create", "delete", "watch"]
+
+  # Permisos para Services (si necesitas)
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "create", "delete"]
+
+---
+# RoleBinding: conecta el ServiceAccount con el Role
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: master-rolebinding
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: master-role
+subjects:
+  - kind: ServiceAccount
+    name: master-sa
+    namespace: default

@@ -25,26 +25,25 @@ from datasets import load_from_disk
 from torch.utils.data import DataLoader
 from torch.optim import AdamW
 from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
+from config_loader import TrainingConfig
 
 MASTER_HOST = os.getenv('MASTER_HOST', 'master-service')
 MASTER_PORT = os.getenv('MASTER_PORT', '50051')
 MODEL_DIR = "/data"
 WORKER_WEIGHTS_DIR = "/data/worker_weights"
 
-TOTAL_EPOCHS = 3
-BATCH_SIZE = 32
-MICRO_BATCH_SIZE = 4
-
+cfg = TrainingConfig()
 class DistributedTrainer():
     def __init__(self):
+        self.cfg = cfg
         self.worker_id = socket.gethostname()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # Conexion gRPC
-        channel = grpc.insecure_channel(f'{MASTER_HOST}:{MASTER_PORT}')
+        channel = grpc.insecure_channel(f'{cfg.master_host}:{cfg.master_port}')
         self.stub = training_pb2_grpc.TrainingServiceStub(channel=channel)
 
-    def train(self, start, end, report_step, epochs=5):
+    def train(self, start, end, report_step):
         # Cargar datos
         dataset = load_from_disk("/data/train")
         dataset = dataset.select(range(start, end))
@@ -63,18 +62,20 @@ class DistributedTrainer():
         ).to(self.device)
         model.load_state_dict(torch.load(weights_path, map_location=self.device, weights_only=True))
 
-        train_loader = DataLoader(dataset, batch_size=MICRO_BATCH_SIZE, shuffle=True)
-        optim = AdamW(model.parameters(), lr=5e-5)
-        accumulation_steps = BATCH_SIZE // MICRO_BATCH_SIZE
+        train_loader = DataLoader(dataset, batch_size=self.cfg.micro_batch_size, shuffle=True)
+        optim = AdamW(model.parameters(), lr=self.cfg.learning_rate)
+        accumulation_steps = self.cfg.batch_size // self.cfg.micro_batch_size
 
-        sync_every = 5
         batch_counter = 0
-        for epoch in range(epochs):
+        for epoch in range(self.cfg.epochs):
             epoch_loss = 0.0
             steps = 0
             correct_predictions = 0
             total_samples = 0
-            
+            if epoch == 0:
+                sync_every = self.cfg.sync_every_early
+            else:
+                sync_every = self.cfg.sync_every 
             for step, batch in enumerate(train_loader):
                 input_ids = batch["input_ids"].to(self.device)
                 attention_mask = batch["attention_mask"].to(self.device)
@@ -177,7 +178,7 @@ if __name__ == "__main__":
             shard_end = signal.end
             print(f"{trainer.worker_id}: Inicio: {shard_start} - Fin: {shard_end}")
 
-            trainer.train(start=shard_start, end=shard_end, report_step=signal.report_step, epochs=TOTAL_EPOCHS)
+            trainer.train(start=shard_start, end=shard_end, report_step=signal.report_step)
             print(f"Entrenamiento completado")
     except grpc.RpcError as e:
         print(f"Error en la comunicación gRPC: {e}")

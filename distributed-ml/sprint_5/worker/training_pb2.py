@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0etraining.proto\x12\x08training\"!\n\x0cStartRequest\x12\x11\n\tworker_id\x18\x01 \x01(\t\"O\n\rStartResponse\x12\r\n\x05ready\x18\x01 \x01(\x08\x12\r\n\x05start\x18\x02 \x01(\x05\x12\x0b\n\x03\x65nd\x18\x03 \x01(\x05\x12\x13\n\x0breport_step\x18\x04 \x01(\x05\"\'\n\x03\x41\x63k\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\"o\n\nMetricData\x12\x11\n\tworker_id\x18\x01 \x01(\t\x12\r\n\x05\x65poch\x18\x02 \x01(\x05\x12\x0c\n\x04step\x18\x03 \x01(\x05\x12\x0c\n\x04loss\x18\x04 \x01(\x02\x12\x10\n\x08\x61\x63\x63uracy\x18\x05 \x01(\x02\x12\x11\n\ttimestamp\x18\x06 \x01(\t\"\"\n\rFinishRequest\x12\x11\n\tworker_id\x18\x01 \x01(\t\"1\n\rWeightRequest\x12\x11\n\tworker_id\x18\x01 \x01(\t\x12\r\n\x05\x65poch\x18\x02 \x01(\x05\"&\n\x0eWeightResponse\x12\x14\n\x0cweights_path\x18\x01 \x01(\t\"M\n\x0cGradientData\x12\x11\n\tworker_id\x18\x01 \x01(\t\x12\x0c\n\x04step\x18\x02 \x01(\x05\x12\x1c\n\x14serialized_gradients\x18\x03 \x01(\x0c\x32\x8c\x03\n\x0fTrainingService\x12\x41\n\x0eRegisterWorker\x12\x16.training.StartRequest\x1a\x17.training.StartResponse\x12\x46\n\x11GetInitialWeights\x12\x17.training.WeightRequest\x1a\x18.training.WeightResponse\x12\x36\n\rPushGradients\x12\x16.training.GradientData\x1a\r.training.Ack\x12\x46\n\x11GetUpdatedWeights\x12\x17.training.WeightRequest\x1a\x18.training.WeightResponse\x12\x34\n\rReportMetrics\x12\x14.training.MetricData\x1a\r.training.Ack\x12\x38\n\x0e\x46inishTraining\x12\x17.training.FinishRequest\x1a\r.training.Ackb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0etraining.proto\x12\x08training\"!\n\x0cStartRequest\x12\x11\n\tworker_id\x18\x01 \x01(\t\"O\n\rStartResponse\x12\r\n\x05ready\x18\x01 \x01(\x08\x12\r\n\x05start\x18\x02 \x01(\x05\x12\x0b\n\x03\x65nd\x18\x03 \x01(\x05\x12\x13\n\x0breport_step\x18\x04 \x01(\x05\"\'\n\x03\x41\x63k\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\"o\n\nMetricData\x12\x11\n\tworker_id\x18\x01 \x01(\t\x12\r\n\x05\x65poch\x18\x02 \x01(\x05\x12\x0c\n\x04step\x18\x03 \x01(\x05\x12\x0c\n\x04loss\x18\x04 \x01(\x02\x12\x10\n\x08\x61\x63\x63uracy\x18\x05 \x01(\x02\x12\x11\n\ttimestamp\x18\x06 \x01(\t\"\"\n\rFinishRequest\x12\x11\n\tworker_id\x18\x01 \x01(\t\"1\n\rWeightRequest\x12\x11\n\tworker_id\x18\x01 \x01(\t\x12\r\n\x05\x65poch\x18\x02 \x01(\x05\"&\n\x0eWeightResponse\x12\x14\n\x0cweights_path\x18\x01 \x01(\t\"-\n\nWeightData\x12\x11\n\tworker_id\x18\x01 \x01(\t\x12\x0c\n\x04step\x18\x02 \x01(\x05\x32\x88\x03\n\x0fTrainingService\x12\x41\n\x0eRegisterWorker\x12\x16.training.StartRequest\x1a\x17.training.StartResponse\x12\x46\n\x11GetInitialWeights\x12\x17.training.WeightRequest\x1a\x18.training.WeightResponse\x12\x32\n\x0bPushWeights\x12\x14.training.WeightData\x1a\r.training.Ack\x12\x46\n\x11GetUpdatedWeights\x12\x17.training.WeightRequest\x1a\x18.training.WeightResponse\x12\x34\n\rReportMetrics\x12\x14.training.MetricData\x1a\r.training.Ack\x12\x38\n\x0e\x46inishTraining\x12\x17.training.FinishRequest\x1a\r.training.Ackb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -45,8 +45,8 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_WEIGHTREQUEST']._serialized_end=383
   _globals['_WEIGHTRESPONSE']._serialized_start=385
   _globals['_WEIGHTRESPONSE']._serialized_end=423
-  _globals['_GRADIENTDATA']._serialized_start=425
-  _globals['_GRADIENTDATA']._serialized_end=502
-  _globals['_TRAININGSERVICE']._serialized_start=505
-  _globals['_TRAININGSERVICE']._serialized_end=901
+  _globals['_WEIGHTDATA']._serialized_start=425
+  _globals['_WEIGHTDATA']._serialized_end=470
+  _globals['_TRAININGSERVICE']._serialized_start=473
+  _globals['_TRAININGSERVICE']._serialized_end=865
 # @@protoc_insertion_point(module_scope)

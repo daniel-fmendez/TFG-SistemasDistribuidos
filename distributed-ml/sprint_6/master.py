@@ -39,16 +39,14 @@ from kubernetes import client, config
 from kubernetes.utils import create_from_dict
 from kubernetes.client.rest import ApiException
 from transformers import DistilBertForSequenceClassification
+from config_loader import TrainingConfig
 
 # Donde se guardará el modelo
 MODEL_DIR = "/data"
 WEIGHTS_DIR = "/data/weights"
 WORKER_WEIGHTS_DIR = "/data/worker_weights"
 
-PVC_NAME = "server-pvc"
-WORKERS_FILE = "worker-job.yaml"
-TOTAL_SAMPLES  = 3000
-REPORT_STEP = 40
+
 
 # Eliminar warning de hugging face
 os.environ['HF_HUB_DISABLE_TELEMETRY'] = '1'
@@ -108,9 +106,10 @@ def apply_manifest(file):
 
 
 class TrainingService:
-    def __init__(self, num_workers, server):
+    def __init__(self, config, server):
+        self.cfg = config
         self.server = server
-        self.num_workers = num_workers
+        self.num_workers = config.num_workers
         self.registered_workers = []
         self.worker_id_to_index = {} 
         self.workers_gradient = {}
@@ -120,10 +119,6 @@ class TrainingService:
         self.training_completed = False 
         self.version_counter = 0
 
-        # Inicializar modelo global
-        # self.model = build_model()
-        # self.model.apply(init_weights_random)
-        # self.global_weights = self.model.state_dict()
         os.makedirs(WEIGHTS_DIR, exist_ok=True)
         self._initialize_weights()
 
@@ -184,7 +179,7 @@ class TrainingService:
             ready=True,
             start = config["start"],
             end = config["end"],
-            report_step = REPORT_STEP
+            report_step = self.cfg.report_step
         )
 
     def ReportMetrics(self, request, context):
@@ -294,16 +289,9 @@ class TrainingService:
             
             # Si todos los workers han terminado
             if len(self.finished_workers) == self.num_workers:
-                if self.workers_gradient:
-                    logger.info("Agregando gradientes finales...")
-                    self._aggregate_gradients_from_disk()
-                    self._save_weights_to_pvc()
-                
                 self._save_final_model()
-                
-                # Marcar entrenamiento como completado
                 self.training_completed = True
-                self.server.stop(grace=10)  # Espera 10s antes de forzar cierre
+                self.server.stop(grace=10)
         
         return training_pb2.Ack(
             success=True, 
@@ -343,7 +331,7 @@ class TrainingService:
     # Preparalos splits del modelo para cada worker
     def prepare_training(self):
         # Se crea al inicio
-        shard_len = TOTAL_SAMPLES // self.num_workers
+        shard_len = self.cfg.total_samples // self.num_workers
         for i in range(self.num_workers):
             start = i * shard_len
             end = start + shard_len
@@ -360,9 +348,9 @@ class TrainingService:
         for i in range(self.num_workers):
             worker_manifest = get_worker_job_template(
                 worker_id=i,
-                master_host='master-service',
-                master_port=50051,
-                pvc_name=PVC_NAME
+                master_host=self.cfg.master_host,
+                master_port=self.cfg.master_port,
+                pvc_name=self.cfg.pvc_name
             )
             name = f"worker-{i}"
             with open(f"{name}.yaml", "w") as f:
@@ -371,13 +359,12 @@ class TrainingService:
             apply_manifest(name)
     
     
-
-    
 def serve():
     # Crear service y conectarlo a un server
+    cfg = TrainingConfig()
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     trainer_service = TrainingService(
-        num_workers=2,
+        config=cfg,
         server=server
     )
     training_pb2_grpc.add_TrainingServiceServicer_to_server(trainer_service, server)

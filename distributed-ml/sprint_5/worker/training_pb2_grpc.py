@@ -44,9 +44,9 @@ class TrainingServiceStub(object):
                 request_serializer=training__pb2.WeightRequest.SerializeToString,
                 response_deserializer=training__pb2.WeightResponse.FromString,
                 _registered_method=True)
-        self.PushGradients = channel.unary_unary(
-                '/training.TrainingService/PushGradients',
-                request_serializer=training__pb2.GradientData.SerializeToString,
+        self.PushWeights = channel.unary_unary(
+                '/training.TrainingService/PushWeights',
+                request_serializer=training__pb2.WeightData.SerializeToString,
                 response_deserializer=training__pb2.Ack.FromString,
                 _registered_method=True)
         self.GetUpdatedWeights = channel.unary_unary(
@@ -81,7 +81,7 @@ class TrainingServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def PushGradients(self, request, context):
+    def PushWeights(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -118,9 +118,9 @@ def add_TrainingServiceServicer_to_server(servicer, server):
                     request_deserializer=training__pb2.WeightRequest.FromString,
                     response_serializer=training__pb2.WeightResponse.SerializeToString,
             ),
-            'PushGradients': grpc.unary_unary_rpc_method_handler(
-                    servicer.PushGradients,
-                    request_deserializer=training__pb2.GradientData.FromString,
+            'PushWeights': grpc.unary_unary_rpc_method_handler(
+                    servicer.PushWeights,
+                    request_deserializer=training__pb2.WeightData.FromString,
                     response_serializer=training__pb2.Ack.SerializeToString,
             ),
             'GetUpdatedWeights': grpc.unary_unary_rpc_method_handler(
@@ -204,7 +204,7 @@ class TrainingService(object):
             _registered_method=True)
 
     @staticmethod
-    def PushGradients(request,
+    def PushWeights(request,
             target,
             options=(),
             channel_credentials=None,
@@ -217,8 +217,8 @@ class TrainingService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/training.TrainingService/PushGradients',
-            training__pb2.GradientData.SerializeToString,
+            '/training.TrainingService/PushWeights',
+            training__pb2.WeightData.SerializeToString,
             training__pb2.Ack.FromString,
             options,
             channel_credentials,
