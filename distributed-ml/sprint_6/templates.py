@@ -37,6 +37,10 @@ def get_dataset_init_job_template(job_name, pvc_name, image):
                                 {
                                     "name": "dataset-vol",
                                     "mountPath": "/data"
+                                },
+                                {
+                                    "name": "config-volume",
+                                    "mountPath": "/app/config"
                                 }
                             ]
                         }
@@ -46,6 +50,12 @@ def get_dataset_init_job_template(job_name, pvc_name, image):
                             "name": "dataset-vol",
                             "persistentVolumeClaim": {
                                 "claimName": pvc_name
+                            }
+                        },
+                        {
+                            "name": "config-volume",
+                            "configMap": {
+                                "name": "training-config"
                             }
                         }
                     ]

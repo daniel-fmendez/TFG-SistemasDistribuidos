@@ -1,0 +1,23 @@
+master
+
+2026-02-21 17:43:28,511 - grpc._server - ERROR - Exception calling application: 'NoneType' object has no attribute 'load_state_dict'
+Traceback (most recent call last):
+  File "/opt/conda/lib/python3.11/site-packages/grpc/_server.py", line 608, in _call_behavior
+    response_or_iterator = behavior(argument, context)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/master.py", line 293, in FinishTraining
+    self._save_final_model()
+  File "/app/master.py", line 315, in _save_final_model
+    model.load_state_dict(self.global_weights)
+    ^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'load_state_dict'
+
+
+
+worker
+
+Error en la comunicación gRPC: <_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.UNKNOWN
+	details = "Exception calling application: 'NoneType' object has no attribute 'load_state_dict'"
+	debug_error_string = "UNKNOWN:Error received from peer  {grpc_status:2, grpc_message:"Exception calling application: \'NoneType\' object has no attribute \'load_state_dict\'"}"
+>

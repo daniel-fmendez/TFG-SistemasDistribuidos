@@ -19,7 +19,6 @@
 import os
 import torch
 import grpc
-from concurrent import futures
 import logging
 import os
 import time 
@@ -33,14 +32,17 @@ import json
 import training_pb2
 import training_pb2_grpc
 
+from concurrent import futures
 from datasets import load_dataset_builder
 from templates import get_pvc_template, get_dataset_init_job_template, get_worker_job_template
 from kubernetes import client, config
 from kubernetes.utils import create_from_dict
 from kubernetes.client.rest import ApiException
 from transformers import DistilBertForSequenceClassification
-from config_loader import TrainingConfig
 
+from config_loader import TrainingConfig
+from model_factory import ModelFactory
+from dataset_factory import DatasetFactory
 # Donde se guardará el modelo
 MODEL_DIR = "/data"
 WEIGHTS_DIR = "/data/weights"
@@ -57,27 +59,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def build_model():
-    model = DistilBertForSequenceClassification.from_pretrained(
-        "distilbert-base-uncased",
-        num_labels=4
-    )
-    return model
-
-def init_weights_random(module):
-    if isinstance(module, nn.Linear):
-        # Inicialización Xavier para capas lineales
-        torch.nn.init.xavier_uniform_(module.weight)
-        if module.bias is not None:
-            torch.nn.init.zeros_(module.bias)
-    
-    elif isinstance(module, nn.Embedding):
-        # Inicialización normal para embeddings
-        torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
-    
-    elif isinstance(module, nn.LayerNorm):
-        # LayerNorm: weights a 1, bias a 0
-        torch.nn.init.ones_(module.weight)
-        torch.nn.init.zeros_(module.bias)
+    pass
 
 def apply_manifest(file):
     try:
@@ -132,10 +114,16 @@ class TrainingService:
         logger.info(f"Esperando Workers....")
 
     def _initialize_weights(self):
-        model = build_model()
-        model.apply(init_weights_random)
+        dataset_info = DatasetFactory.get_info(self.cfg.dataset_name)
+        num_labels = dataset_info["num_labels"]
+        model = ModelFactory.build(
+            model_type=self.cfg.model_type,
+            model_name=self.cfg.model_name,
+            num_labels=num_labels
+        )
+
         self.global_weights = model.state_dict()
-        del model  # Liberar memoria inmediatamente
+        del model
         torch.cuda.empty_cache() if torch.cuda.is_available() else None
         self._save_weights_to_pvc()
 
@@ -308,11 +296,19 @@ class TrainingService:
             os.path.join(model_path, "pytorch_model_weights.pt")
         )
         
-        # Si necesitas el modelo completo, hazlo con menos memoria:
+        # Reconstruir modelo usando ModelFactory
         logger.info("Guardando modelo final...")
-        model = build_model()
+        model = ModelFactory.build(
+            model_type=self.cfg.model_type,
+            model_name=self.cfg.model_name,
+            num_labels=self.cfg.num_labels
+        )
         model.load_state_dict(self.global_weights)
-        model.save_pretrained(model_path)
+        
+        # Guardar modelo completo (para transformers)
+        if self.cfg.model_type in ["distilbert", "bert", "roberta"]:
+            model.save_pretrained(model_path)
+        
         del model
         
         logger.info(f"Modelo guardado exitosamente en {model_path}")

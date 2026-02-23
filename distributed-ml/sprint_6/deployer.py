@@ -11,28 +11,25 @@ from kubernetes import client, config
 from kubernetes.utils import create_from_dict
 from kubernetes.client.rest import ApiException
 
-DATASET_REPO = "ag_news"
-PVC_NAME = "server-pvc"
+from dataset_factory import DatasetFactory
+from config_loader import TrainingConfig
+
+cfg = TrainingConfig()
 
 def reserve_space():
-    # Lanza job de creacion de pv
-    builder = load_dataset_builder(DATASET_REPO)
+    size_in_gb = DatasetFactory.calculate_storage_size(cfg.dataset_name)
 
-    size_in_bytes = builder.info.splits['train'].num_bytes
-    size_in_gb = size_in_bytes / (1024**3)
-    # Damos un margen
-    size_in_gb = size_in_gb * 1.5
     pvc = get_pvc_template(
-        name=PVC_NAME,
+        name=cfg.pvc_name,
         size_gi= size_in_gb
     )
 
-    with open(f"{PVC_NAME}.yaml", "w") as f:
+    with open(f"{cfg.pvc_name}.yaml", "w") as f:
         yaml.dump(pvc, f, default_flow_style=False)
     
-    apply_manifest(PVC_NAME)
+    apply_manifest(cfg.pvc_name)
     
-    launch_dataset_init_job(PVC_NAME)
+    launch_dataset_init_job(cfg.pvc_name)
     wait_job_completion("dataset-init")
 
 def apply_manifest(file):
@@ -92,7 +89,7 @@ def create_master():
     master_template = get_master_job_template(
         job_name="master",
         image="my-master:v5",
-        pvc_name=PVC_NAME
+        pvc_name=cfg.pvc_name
     )
     master_name = "master-job"
     with open(f"{master_name}.yaml", "w") as f:
@@ -112,7 +109,7 @@ def create_master():
 
 if __name__ == "__main__":
     # Primero reserva espacio
-    print(f"Creando PVC {PVC_NAME} con el dataset")
+    print(f"Creando PVC {cfg.pvc_name} con el dataset")
     reserve_space()
 
     # Despues crea el master

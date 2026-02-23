@@ -1,20 +1,21 @@
 model:
   type: "distilbert"
   name: "distilbert-base-uncased"
-  num_labels: 4
+  num_labels: 2
 
 dataset:
-  name: "ag_news"
-  total_samples: 3000
+  name: "imdb"
+  total_samples: 2000
   split: "train"
 
 training:
   epochs: 3
   batch_size: 32
   micro_batch_size: 4
-  sync_every: 5
+  sync_every: 6
+  sync_every_early: 2
   learning_rate: 5e-5
-  report_step: 40
+  report_step: 20
 
 workers:
   num_workers: 2
