@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: deployer
+  namespace: default
+  labels:
+    app: distributed-training
+    component: deployer
+spec:
+  ttlSecondsAfterFinished: 300 # Auto-cleanup después de 5 min
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: distributed-training
+        component: deployer
+    spec:
+      serviceAccountName: master-sa
+      restartPolicy: OnFailure
+
+      containers:
+        - name: deployer
+          image: deployer:v2
+          imagePullPolicy: Never
+          volumeMounts:
+            - name: config-volume
+              mountPath: /app/config
+
+      volumes:
+        - name: config-volume
+          configMap:
+            name: training-config

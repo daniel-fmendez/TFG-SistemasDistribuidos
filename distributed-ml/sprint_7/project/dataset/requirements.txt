@@ -1,0 +1,9 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+datasets==4.5.0
+grpcio==1.76.0
+kubernetes==35.0.0
+protobuf==7.34.0
+PyYAML==6.0.3
+torch==2.10.0+cpu
+torchvision==0.25.0+cpu
+transformers==4.57.6

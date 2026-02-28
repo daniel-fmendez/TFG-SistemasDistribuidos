@@ -1,0 +1,24 @@
+model:
+  type: "distilbert"
+  name: "distilbert-base-uncased"
+  num_labels: 2
+
+dataset:
+  name: "imdb"
+  total_samples: 2000
+  split: "train"
+
+training:
+  epochs: 3
+  batch_size: 32
+  micro_batch_size: 4
+  sync_every: 6
+  sync_every_early: 2
+  learning_rate: 5e-5
+  report_step: 20
+
+workers:
+  num_workers: 2
+  master_host: "master-service"
+  master_port: 50051
+  pvc_name: "server-pvc"

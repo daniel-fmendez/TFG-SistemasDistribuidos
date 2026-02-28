@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package heartbeat;
+
+service HeartbeatService {
+  rpc RegisterWorker(StartRequest) returns (StartResponse);
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+}
+message StartRequest {
+  string worker_id = 1;
+}
+message StartResponse {
+  bool ready = 1;
+}
+message HeartbeatResponse {
+  int64 timestamp = 1;
+  bool ack = 2;
+}
+
+message HeartbeatRequest {
+  int64 timestamp = 1;
+  string worker_id = 2;
+}
