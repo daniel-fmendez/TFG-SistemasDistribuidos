@@ -34,6 +34,10 @@ class TrainingConfig:
         self.master_port = int(raw["workers"]["master_port"])
         self.pvc_name = raw["workers"]["pvc_name"]
         
+        # Heartbeat
+        self.heartbeat_interval = int(raw["heartbeat"]["interval"])
+        self.heartbeat_multiplier = int(raw["heartbeat"]["multiplier"])
+        
     def log(self, logger):
         logger.info(f"Config cargada:")
         logger.info(f"  Modelo: {self.model_name} ({self.num_labels} labels)")

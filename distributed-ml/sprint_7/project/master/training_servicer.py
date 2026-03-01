@@ -31,6 +31,7 @@ class TrainingServicer:
     
     def GetInitialWeights(self, request, context):
         worker_id = request.worker_id
+        self.registry.update_alive(worker_id)
         print(f"Worker {worker_id} solicitando pesos iniciales")
     
         return training_pb2.WeightResponse(
@@ -39,12 +40,14 @@ class TrainingServicer:
 
     def PushWeights(self, request, context):
         worker_id = request.worker_id
+        self.registry.update_alive(worker_id)
         step = request.step
         self.aggregator.aggregate(worker_id, step)
         return training_pb2.Ack(success=True, message="Gradientes recibidos")
     
     def GetUpdatedWeights(self, request, context):
         path = self.aggregator.get_updated_weights()
+        self.registry.update_alive(request.worker_id)
         print(f"Worker {request.worker_id} solicitando pesos actualizados")
         
         return training_pb2.WeightResponse(
@@ -52,6 +55,7 @@ class TrainingServicer:
         )
     
     def ReportMetrics(self, request, context):
+        self.registry.update_alive(request.worker_id)
         payload = {
             'worker_id': request.worker_id,
             'epoch': request.epoch,

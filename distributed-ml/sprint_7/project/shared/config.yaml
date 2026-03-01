@@ -22,3 +22,7 @@ workers:
   master_host: "master-service"
   master_port: 50051
   pvc_name: "server-pvc"
+
+heartbeat:
+  interval: 15
+  multiplier: 3

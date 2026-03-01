@@ -17,7 +17,7 @@ class TrainingLoop:
         self.client = grpc_client
         self.synchronizer = synchronizer
 
-    def run(self,  worker_id, model, dataset, dataset_info, signal):
+    def run(self,  worker_id, model, dataset, dataset_info, signal, stop_event):
         start = int(signal.start)
         end = int(signal.end)
         report_step = int(signal.report_step)
@@ -35,6 +35,9 @@ class TrainingLoop:
             pending_gradients = False
 
             for step, batch in enumerate(train_loader):
+                if stop_event.is_set():
+                    print("[Training] Stop recibido, saliendo del bucle")
+                    return
                 outputs, labels = self._forward(model, batch, dataset_info)
                 outputs.loss.backward()
                 pending_gradients = True

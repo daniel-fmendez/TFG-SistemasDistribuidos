@@ -37,7 +37,6 @@ class WorkerRegistry:
     def get_shard(self, index):
         return self.shards[index]
 
-
     # Preparalos splits del modelo para cada worker
     def _prepare_training(self):
         # Se crea al inicio
@@ -73,3 +72,22 @@ class WorkerRegistry:
     def get_metrics(self):
         with self._lock:
             return dict(self.metrics)
+    
+    def update_alive(self, worker_id):
+        now = time.time()
+        with self._lock:
+            if worker_id not in self.registered_workers:
+                raise KeyError(f"Worker {worker_id} no está registrado") 
+            self.registered_workers[worker_id] = now
+
+    def check_dead(self, now):
+        with self._lock:
+            dead = [
+                wid for wid, last_seen in self.registered_workers.items()
+                if now - last_seen > (self.cfg.heartbeat_interval * self.cfg.heartbeat_multiplier)
+            ]
+            for wid in dead:
+                print(f"[Master] Worker caído (timeout): {wid}")
+                # Lo matamos de la lista, se morira por error grpc
+                del self.registered_workers[wid]
+            

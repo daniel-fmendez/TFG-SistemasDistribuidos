@@ -1,4 +1,5 @@
 import socket
+import threading
 
 import grpc
 import torch
@@ -8,7 +9,7 @@ from grpc_client import GrpcClient
 from model_factory import ModelFactory
 from training_loop import TrainingLoop
 from weight_synchronizer import WeightSynchronizer
-
+from heartbeat_loop import HeartbeatLoop
 
 class DistributedTrainer:
     def __init__(self):
@@ -23,6 +24,8 @@ class DistributedTrainer:
             if not signal.ready:
                 return
             
+            stop_event = threading.Event()
+
             shard_len = self.cfg.total_samples // self.cfg.num_workers
             worker_index = int(signal.start) // shard_len
 
@@ -32,14 +35,20 @@ class DistributedTrainer:
                 device=self.device,
                 grpc_client=self.client
             )
+
+            heartbeat = HeartbeatLoop(self.cfg, self.worker_id, self.client, stop_event)
+            heartbeat_thread = threading.Thread(target=heartbeat.heartbeat_loop, daemon=True)
+            heartbeat_thread.start()
+
             dataset_info = DatasetFactory.get_info(self.cfg.dataset_name)
             dataset = self._load_dataset(signal, dataset_info)
 
             model = self._build_model(dataset_info)
             synchronizer.load_initial_weights(model)
-
+            # Insertar heartbeat
+            
             loop = TrainingLoop(self.cfg, self.device, self.client, synchronizer)
-            loop.run(self.worker_id, model, dataset, dataset_info, signal)
+            loop.run(self.worker_id, model, dataset, dataset_info, signal, stop_event)
 
             self.client.finish_training(self.worker_id)
             print("Entrenamiento completado")
