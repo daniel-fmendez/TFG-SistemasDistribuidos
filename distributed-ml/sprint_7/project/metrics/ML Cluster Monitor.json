@@ -820,7 +820,11 @@
   "preload": false,
   "refresh": "5s",
   "schemaVersion": 42,
-  "tags": [],
+  "tags": [
+    "kubernetes",
+    "ml",
+    "training"
+  ],
   "templating": {
     "list": [
       {
@@ -859,5 +863,5 @@
   "timezone": "browser",
   "title": "ML Cluster Monitor",
   "uid": "adb8x4z",
-  "version": 21
+  "version": 22
 }
