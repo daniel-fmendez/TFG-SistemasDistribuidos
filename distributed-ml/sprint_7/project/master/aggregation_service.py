@@ -13,8 +13,9 @@ METRICS_FILE = "training_metrics.json"
 WEIGHTS_FILE = "pytorch_model_weights.pt"
 
 class AggregationService:
-    def __init__(self, config):
+    def __init__(self, config, metrics_collector):
         self.cfg = config
+        self.metrics_collector = metrics_collector
         self.workers_weights = {}
         self.global_weights = None
         self.current_weights_path = None
@@ -80,19 +81,22 @@ class AggregationService:
         return self._save_weights_to_pvc()
 
     def _save_weights_to_pvc(self):
-        weights_path = os.path.join(WEIGHTS_DIR, f"global_weights_v{self.version_counter}.pt")
+        with self.lock: 
+            final_path = os.path.join(WEIGHTS_DIR, f"global_weights_v{self.version_counter}.pt")
+            temp_path = final_path + ".tmp"
 
-        torch.save(self.global_weights, weights_path)
-        self.current_weights_path = weights_path
-        if self.version_counter > 0:
-            old_path = os.path.join(WEIGHTS_DIR, f"global_weights_v{self.version_counter-1}.pt")
-            if os.path.exists(old_path):
-                os.remove(old_path)
-                print(f"Versión antigua eliminada: {old_path}")
-        
-        self.version_counter += 1
-        print(f"Pesos guardados en {weights_path}")
-        return weights_path
+            torch.save(self.global_weights, temp_path)
+            os.replace(temp_path, final_path) 
+
+            if self.version_counter > 0:
+                old_path = os.path.join(WEIGHTS_DIR, f"global_weights_v{self.version_counter-1}.pt")
+                if os.path.exists(old_path):
+                    os.remove(old_path)
+
+            self.current_weights_path = final_path
+            self.version_counter += 1
+            print(f"Pesos guardados en {final_path}")
+            return final_path
 
     def _cleanup_weights(self, step):
         step_dir = os.path.join(WORKER_WEIGHTS_DIR, f"step_{step}")
@@ -116,6 +120,8 @@ class AggregationService:
         if should_aggregate:
             self._aggregate_weights_from_disk(step)
             self._cleanup_weights(step)
-
+            self.metrics_collector.record_aggregation()
+            
     def get_updated_weights(self):
-        return self.current_weights_path
+        with self.lock:
+            return self.current_weights_path 

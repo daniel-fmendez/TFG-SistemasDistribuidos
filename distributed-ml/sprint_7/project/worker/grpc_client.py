@@ -3,7 +3,7 @@ import training_pb2
 import training_pb2_grpc
 import heartbeat_pb2
 import heartbeat_pb2_grpc
-
+import extra_functions
 class GrpcClient:
     def __init__(self, host, port):
         channel = grpc.insecure_channel(f'{host}:{port}')
@@ -44,6 +44,13 @@ class GrpcClient:
     
     # Heartbeat
     def send_heartbeat(self, worker_id, timestamp):
+        metrics = extra_functions.get_system_metrics()
         return self.heartbeat_stub.Heartbeat(
-            heartbeat_pb2.HeartbeatRequest(timestamp=timestamp, worker_id=worker_id)
+            heartbeat_pb2.HeartbeatRequest(
+                    timestamp=timestamp, 
+                    worker_id=worker_id,
+                    cpu_usage=metrics['cpu_usage'],
+                    memory_usage=metrics['memory_usage'],
+                    memory_mb=metrics['memory_mb']
+                )
         )

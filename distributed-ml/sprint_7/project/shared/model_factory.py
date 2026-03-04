@@ -14,7 +14,8 @@ class ModelFactory:
         if model_type == "distilbert":
             return DistilBertForSequenceClassification.from_pretrained(
                 model_name,
-                num_labels=num_labels
+                num_labels=num_labels,
+                low_cpu_mem_usage=False
             )
         elif model_type == "bert":
             return BertForSequenceClassification.from_pretrained(

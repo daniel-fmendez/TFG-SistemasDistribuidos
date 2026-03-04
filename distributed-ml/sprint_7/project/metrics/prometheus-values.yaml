@@ -1,0 +1,8 @@
+server:
+  persistentVolume:
+    enabled: false
+
+extraScrapeConfigs: |
+  - job_name: 'master'
+    static_configs:
+      - targets: ['master-service.default.svc.cluster.local:8000']

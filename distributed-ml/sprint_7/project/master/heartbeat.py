@@ -4,19 +4,28 @@ import heartbeat_pb2_grpc
 import grpc
 
 class HeartbeatServicer:
-    def __init__(self, worker_registry):
+    def __init__(self, worker_registry, metrics_collector):
         self.registry = worker_registry
+        self.metrics = metrics_collector
 
     def Heartbeat(self, request, context):
         worker_id = request.worker_id
         print(f"[Heartbeat] Pulso recibido de {worker_id}")
         now = time.time()
+        # Actualizar metricas
+        self.metrics.record_stats(
+            worker_id=worker_id,
+            memory_usage=request.memory_usage,
+            memory_mb=request.memory_mb,
+            cpu_usage=request.cpu_usage
+        )
         try:
             self.registry.update_alive(worker_id)
             return heartbeat_pb2.HeartbeatResponse(
                 timestamp = int(now),
                 ack = True
             )
+            
         except KeyError:
             print(f"[Master] Heartbeat de worker desconocido: {worker_id}")
             context.set_code(grpc.StatusCode.NOT_FOUND)

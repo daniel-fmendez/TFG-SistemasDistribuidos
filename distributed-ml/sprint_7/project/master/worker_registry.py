@@ -1,12 +1,11 @@
 import threading
 import time
 
-
-# TODO adapt to heartbeat
 # Maneja workers, metricas y shards
 class WorkerRegistry:
-    def __init__(self, config, on_all_finished=None):
+    def __init__(self, config, metrics_collector, on_all_finished=None):
         self.cfg = config
+        self.metrics_collector = metrics_collector
         self._on_all_finished = on_all_finished
         # Diccionario de workers vivos
         self.registered_workers = {}
@@ -23,6 +22,7 @@ class WorkerRegistry:
         with self._all_ready:
             if worker_id not in self.registered_workers:
                 index = len(self.registered_workers)
+                self.metrics_collector.set_workers_registered(index+1)
                 self.registered_workers[worker_id] = time.time()
                 print(f"Worker {worker_id} registrado con índice {index}.")
             else:
@@ -63,8 +63,10 @@ class WorkerRegistry:
     def mark_finished(self, worker_id):
         with self._lock:
             self.finished_workers.add(worker_id)
-            print(f"Worker {worker_id} finalizado. ({len(self.finished_workers)}/{self.num_workers})")
-            all_done = len(self.finished_workers) == self.num_workers
+            length = len(self.finished_workers)
+            self.metrics_collector.set_workers_finished(length)
+            print(f"Worker {worker_id} finalizado. ({length}/{self.num_workers})")
+            all_done = length == self.num_workers
 
         if all_done and self._on_all_finished:
             self._on_all_finished()
@@ -90,4 +92,5 @@ class WorkerRegistry:
                 print(f"[Master] Worker caído (timeout): {wid}")
                 # Lo matamos de la lista, se morira por error grpc
                 del self.registered_workers[wid]
+                self.metrics_collector.set_workers_registered(len(self.finished_workers)+1)
             

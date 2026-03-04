@@ -7,15 +7,13 @@ import training_pb2
 import training_pb2_grpc
 
 class TrainingServicer:
-    def __init__(self, config, model_persistence, aggregation_service, worker_registry, orchestrator):
+    def __init__(self, config, model_persistence, aggregation_service, worker_registry, orchestrator, metrics_collector):
         self.cfg = config
         self.persistence = model_persistence
         self.aggregator = aggregation_service
         self.registry = worker_registry
         self.orchestrator = orchestrator
-        # TODO ver si va aqui
-        # self.heartbeat = heartbeat_service
-
+        self.metrics_collector = metrics_collector
         self.orchestrator.create_workers(self.cfg)
     
     def RegisterWorker(self, request, context):
@@ -65,10 +63,18 @@ class TrainingServicer:
             'timestamp': request.timestamp
         }
         self.registry.save_metrics(payload)
+        self.metrics_collector.record_epoch(request.epoch)
+
+        self.metrics_collector.record_metric(
+            worker_id=request.worker_id,
+            loss=request.loss,
+            accuracy=request.accuracy
+        )
         return training_pb2.Ack(success=True, message="Ok")
     
     def FinishTraining(self, request, context):
         self.registry.mark_finished(request.worker_id)
+        self.metrics_collector.record_epoch(self.cfg.epochs)
         return training_pb2.Ack(success=True, message=f"Worker {request.worker_id} finalizado")
         
     

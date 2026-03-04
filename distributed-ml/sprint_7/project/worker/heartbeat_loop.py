@@ -1,7 +1,7 @@
 
 import time
 import grpc
-
+import extra_functions
 class HeartbeatLoop:
     def __init__(self, config, worker_id, grpc_client, stop_event):
         self.cfg = config
@@ -13,10 +13,9 @@ class HeartbeatLoop:
         while not self.stop_event.is_set():
             try:
                 time.sleep(self.cfg.heartbeat_interval)
-
                 response = self.client.send_heartbeat(
+                    timestamp=int(time.time()),
                     worker_id=self.worker_id, 
-                    timestamp=int(time.time())
                 )
                 if not response.ack:
                     print("[Heartbeat] Master rechazó el heartbeat, deteniendo worker")

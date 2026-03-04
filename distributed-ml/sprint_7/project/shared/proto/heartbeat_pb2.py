@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0fheartbeat.proto\x12\theartbeat\"3\n\x11HeartbeatResponse\x12\x11\n\ttimestamp\x18\x01 \x01(\x03\x12\x0b\n\x03\x61\x63k\x18\x02 \x01(\x08\"8\n\x10HeartbeatRequest\x12\x11\n\ttimestamp\x18\x01 \x01(\x03\x12\x11\n\tworker_id\x18\x02 \x01(\t2Z\n\x10HeartbeatService\x12\x46\n\tHeartbeat\x12\x1b.heartbeat.HeartbeatRequest\x1a\x1c.heartbeat.HeartbeatResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0fheartbeat.proto\x12\theartbeat\"3\n\x11HeartbeatResponse\x12\x11\n\ttimestamp\x18\x01 \x01(\x03\x12\x0b\n\x03\x61\x63k\x18\x02 \x01(\x08\"t\n\x10HeartbeatRequest\x12\x11\n\ttimestamp\x18\x01 \x01(\x03\x12\x11\n\tworker_id\x18\x02 \x01(\t\x12\x11\n\tcpu_usage\x18\x03 \x01(\x02\x12\x14\n\x0cmemory_usage\x18\x04 \x01(\x02\x12\x11\n\tmemory_mb\x18\x05 \x01(\x02\x32Z\n\x10HeartbeatService\x12\x46\n\tHeartbeat\x12\x1b.heartbeat.HeartbeatRequest\x1a\x1c.heartbeat.HeartbeatResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,7 +34,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_HEARTBEATRESPONSE']._serialized_start=30
   _globals['_HEARTBEATRESPONSE']._serialized_end=81
   _globals['_HEARTBEATREQUEST']._serialized_start=83
-  _globals['_HEARTBEATREQUEST']._serialized_end=139
-  _globals['_HEARTBEATSERVICE']._serialized_start=141
-  _globals['_HEARTBEATSERVICE']._serialized_end=231
+  _globals['_HEARTBEATREQUEST']._serialized_end=199
+  _globals['_HEARTBEATSERVICE']._serialized_start=201
+  _globals['_HEARTBEATSERVICE']._serialized_end=291
 # @@protoc_insertion_point(module_scope)

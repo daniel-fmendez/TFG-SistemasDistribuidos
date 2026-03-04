@@ -167,8 +167,13 @@ def get_master_job_template(job_name, image, pvc_name):
                             "image": image,
                             "imagePullPolicy": "Never",
                             "ports": [
-                                {
+                                {   
+                                    "name": "grpc",
                                     "containerPort": 50051
+                                },
+                                {   
+                                    "name": "metrics",
+                                    "containerPort": 8000
                                 }
                             ],
                             "env": [
@@ -223,8 +228,14 @@ def get_master_service_template(service_name):
             },
             "ports": [
                 {
+                    "name": "grpc",
                     "port": 50051,
                     "targetPort": 50051
+                },
+                {
+                    "name": "metrics",
+                    "port": 8000,
+                    "targetPort": 8000
                 }
             ]
         }
