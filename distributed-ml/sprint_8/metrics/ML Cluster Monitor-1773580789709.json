@@ -212,10 +212,10 @@
         {
           "editorMode": "code",
           "exemplar": false,
-          "expr": "epoch / total_epochs * 100",
-          "instant": true,
+          "expr": "avg(worker_progress_ratio) * 100",
+          "instant": false,
           "legendFormat": "Progreso",
-          "range": false,
+          "range": true,
           "refId": "A"
         }
       ],
@@ -276,9 +276,9 @@
           "editorMode": "builder",
           "exemplar": false,
           "expr": "epoch",
-          "instant": true,
+          "instant": false,
           "legendFormat": "Epoch Actual",
-          "range": false,
+          "range": true,
           "refId": "A"
         }
       ],
@@ -829,13 +829,9 @@
     "list": [
       {
         "current": {
-          "text": [
-            "worker-1-dbsqm",
-            "worker-0-mv5wx"
-          ],
+          "text": "All",
           "value": [
-            "worker-1-dbsqm",
-            "worker-0-mv5wx"
+            "$__all"
           ]
         },
         "definition": "label_values(worker_loss,worker_id)",
@@ -863,5 +859,5 @@
   "timezone": "browser",
   "title": "ML Cluster Monitor",
   "uid": "adb8x4z",
-  "version": 22
+  "version": 26
 }
