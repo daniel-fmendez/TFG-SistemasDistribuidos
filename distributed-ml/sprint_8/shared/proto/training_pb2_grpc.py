@@ -39,20 +39,20 @@ class TrainingServiceStub(object):
                 request_serializer=training__pb2.WorkerRequest.SerializeToString,
                 response_deserializer=training__pb2.StartResponse.FromString,
                 _registered_method=True)
-        self.GetInitialWeights = channel.unary_unary(
+        self.GetInitialWeights = channel.unary_stream(
                 '/training.TrainingService/GetInitialWeights',
                 request_serializer=training__pb2.WeightRequest.SerializeToString,
-                response_deserializer=training__pb2.WeightResponse.FromString,
+                response_deserializer=training__pb2.WeightChunk.FromString,
                 _registered_method=True)
-        self.PushWeights = channel.unary_unary(
+        self.PushWeights = channel.stream_unary(
                 '/training.TrainingService/PushWeights',
-                request_serializer=training__pb2.WeightData.SerializeToString,
+                request_serializer=training__pb2.WeightChunk.SerializeToString,
                 response_deserializer=training__pb2.Ack.FromString,
                 _registered_method=True)
-        self.GetUpdatedWeights = channel.unary_unary(
+        self.GetUpdatedWeights = channel.unary_stream(
                 '/training.TrainingService/GetUpdatedWeights',
                 request_serializer=training__pb2.WeightRequest.SerializeToString,
-                response_deserializer=training__pb2.WeightResponse.FromString,
+                response_deserializer=training__pb2.WeightChunk.FromString,
                 _registered_method=True)
         self.ReportMetrics = channel.unary_unary(
                 '/training.TrainingService/ReportMetrics',
@@ -86,7 +86,7 @@ class TrainingServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def PushWeights(self, request, context):
+    def PushWeights(self, request_iterator, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -124,20 +124,20 @@ def add_TrainingServiceServicer_to_server(servicer, server):
                     request_deserializer=training__pb2.WorkerRequest.FromString,
                     response_serializer=training__pb2.StartResponse.SerializeToString,
             ),
-            'GetInitialWeights': grpc.unary_unary_rpc_method_handler(
+            'GetInitialWeights': grpc.unary_stream_rpc_method_handler(
                     servicer.GetInitialWeights,
                     request_deserializer=training__pb2.WeightRequest.FromString,
-                    response_serializer=training__pb2.WeightResponse.SerializeToString,
+                    response_serializer=training__pb2.WeightChunk.SerializeToString,
             ),
-            'PushWeights': grpc.unary_unary_rpc_method_handler(
+            'PushWeights': grpc.stream_unary_rpc_method_handler(
                     servicer.PushWeights,
-                    request_deserializer=training__pb2.WeightData.FromString,
+                    request_deserializer=training__pb2.WeightChunk.FromString,
                     response_serializer=training__pb2.Ack.SerializeToString,
             ),
-            'GetUpdatedWeights': grpc.unary_unary_rpc_method_handler(
+            'GetUpdatedWeights': grpc.unary_stream_rpc_method_handler(
                     servicer.GetUpdatedWeights,
                     request_deserializer=training__pb2.WeightRequest.FromString,
-                    response_serializer=training__pb2.WeightResponse.SerializeToString,
+                    response_serializer=training__pb2.WeightChunk.SerializeToString,
             ),
             'ReportMetrics': grpc.unary_unary_rpc_method_handler(
                     servicer.ReportMetrics,
@@ -203,12 +203,12 @@ class TrainingService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(
+        return grpc.experimental.unary_stream(
             request,
             target,
             '/training.TrainingService/GetInitialWeights',
             training__pb2.WeightRequest.SerializeToString,
-            training__pb2.WeightResponse.FromString,
+            training__pb2.WeightChunk.FromString,
             options,
             channel_credentials,
             insecure,
@@ -220,7 +220,7 @@ class TrainingService(object):
             _registered_method=True)
 
     @staticmethod
-    def PushWeights(request,
+    def PushWeights(request_iterator,
             target,
             options=(),
             channel_credentials=None,
@@ -230,11 +230,11 @@ class TrainingService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
+        return grpc.experimental.stream_unary(
+            request_iterator,
             target,
             '/training.TrainingService/PushWeights',
-            training__pb2.WeightData.SerializeToString,
+            training__pb2.WeightChunk.SerializeToString,
             training__pb2.Ack.FromString,
             options,
             channel_credentials,
@@ -257,12 +257,12 @@ class TrainingService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(
+        return grpc.experimental.unary_stream(
             request,
             target,
             '/training.TrainingService/GetUpdatedWeights',
             training__pb2.WeightRequest.SerializeToString,
-            training__pb2.WeightResponse.FromString,
+            training__pb2.WeightChunk.FromString,
             options,
             channel_credentials,
             insecure,

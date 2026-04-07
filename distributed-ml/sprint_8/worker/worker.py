@@ -1,6 +1,7 @@
 import socket
 import threading
-
+import random
+import numpy as np
 import grpc
 import torch
 from config_loader import TrainingConfig
@@ -18,7 +19,17 @@ class DistributedTrainer:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.client = GrpcClient(self.cfg.master_host, self.cfg.master_port)
 
+    def _set_seed(self):
+        torch.manual_seed(self.cfg.seed)
+        random.seed(self.cfg.seed)
+        np.random.seed(self.cfg.seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(self.cfg.seed)
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
+
     def run(self):
+        
         try:
             signal = self.client.register(self.worker_id, timeout=240)
             if not signal.ready:
@@ -27,14 +38,15 @@ class DistributedTrainer:
             stop_event = threading.Event()
 
             shard_len = self.cfg.total_samples // self.cfg.num_workers
-            worker_index = int(signal.start) // shard_len
+            worker_index = signal.worker_index
 
             synchronizer = WeightSynchronizer(
                 config=self.cfg,
                 worker_id=self.worker_id,
                 worker_index=worker_index,
                 device=self.device,
-                grpc_client=self.client
+                grpc_client=self.client,
+                is_remote=False
             )
 
             heartbeat = HeartbeatLoop(self.cfg, self.worker_id, self.client, stop_event)
@@ -45,6 +57,7 @@ class DistributedTrainer:
             print(f"dataset_info: {dataset_info}") 
             dataset = DatasetFactory.load_shard("/data/train", int(signal.start), int(signal.end), dataset_info)
 
+            self._set_seed()
             model = self._build_model(dataset_info)
             synchronizer.load_initial_weights(model)
             # Insertar heartbeat

@@ -12,7 +12,7 @@ class WorkerRegistry:
         self.worker_last_seen = {}
         self.alive_workers = set()
         self.dead_workers = set()
-        # self.min_workers = max(1, self.cfg.num_workers // 2)
+        self.worker_index_map = {}
         self.min_workers = 2
         self.num_workers = self.cfg.num_workers
         self.metrics = {}
@@ -26,23 +26,26 @@ class WorkerRegistry:
 
     def register_worker(self, worker_id):
         with self._all_ready:
+            if worker_id not in self.worker_index_map:
+                self.worker_index_map[worker_id] = len(self.worker_index_map)
+            
             if worker_id not in self.worker_last_seen:
-                index = len(self.worker_last_seen)
-                self.metrics_collector.set_workers_registered(index+1)
                 self.worker_last_seen[worker_id] = time.time()
                 self.alive_workers.add(worker_id)
-                print(f"Worker {worker_id} registrado con índice {index}.")
-            else:
-                index = list(self.worker_last_seen.keys()).index(worker_id)
+                registered_count = len(self.worker_last_seen)
+                self.metrics_collector.set_workers_registered(registered_count)
+                print(f"Worker {worker_id} registrado con índice {self.worker_index_map[worker_id]}.")
+
             if self.pause_event and self.pause_event.is_set():
                 if len(self.alive_workers) >= self.min_workers:
                     self.pause_event.clear()
                     print(f"[Registry] Suficientes workers ({len(self.alive_workers)}), reanudando...")
+
             while len(self.worker_last_seen) < self.num_workers and not self.pause_event.is_set():
                 self._all_ready.wait()
 
             self._all_ready.notify_all()
-            return index
+            return self.worker_index_map[worker_id]
 
     def get_shard(self, index):
         with self._lock:
@@ -169,7 +172,6 @@ class WorkerRegistry:
         
     def get_worker_index(self, worker_id):
         with self._lock:
-            keys = list(self.worker_last_seen.keys())
-            if worker_id in keys:
-                return keys.index(worker_id)
+            if worker_id in self.worker_index_map:
+                return self.worker_index_map[worker_id]
             raise KeyError(f"Worker {worker_id} no encontrado")

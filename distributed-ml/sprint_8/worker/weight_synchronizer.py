@@ -1,65 +1,83 @@
 import os
+import io
 import time
 import torch
+from compressor import Compressor
 
 WORKER_WEIGHTS_DIR = "/data/worker_weights"
+CHUNK_SIZE = 3 * 1024 * 1024 
 
 class WeightSynchronizer:
-    def __init__(self, config, worker_id, worker_index, device, grpc_client):
+    def __init__(self, config, worker_id, worker_index, device, grpc_client, is_remote):
         self.cfg = config
         self.worker_id = worker_id
         self.worker_index = worker_index
         self.device = device
         self.client = grpc_client
+        self.is_remote = is_remote
 
-        self.is_paused = False 
-    def sync(self, model, step):
-        self._save_weights_to_disk(model, step)
-        response = self.client.push_weights(self.worker_id, step)
-        if not response.success:
-            self.is_paused = True
-            print(f"[Worker] Sistema pausado, esperando reanudación...")
-            self._wait_for_resume()
-            self.is_paused = False
-            return
-        self._load_updated_weights(model)
+        self.compressor = Compressor(
+            strategy=config.compression_strategy, 
+            k_ratio=config.top_k_ratio,            
+            quantization_bits=config.quantization_bits
+        )
 
-    def _wait_for_resume(self):
-        while True:
-            time.sleep(5)
-            response = self.client.check_rebalance(self.worker_id)
-            if not response.pause:
-                print(f"[Worker] Sistema reanudado, continuando...")
-                return
-            print(f"[Worker] Aún pausado, esperando...")
-    
     def load_initial_weights(self, model):
-        response = self.client.get_initial_weights(self.worker_id)
-        weights = torch.load(response.weights_path, map_location=self.device, weights_only=True)
+        chunks = self.client.get_initial_weights(self.worker_id)
+        weights = self._chunks_to_state_dict(chunks)
         model.load_state_dict(weights)
 
-    def _save_weights_to_disk(self, model, step):
-        step_dir = os.path.join(WORKER_WEIGHTS_DIR, f"step_{step}")
-        os.makedirs(step_dir, exist_ok=True)
-        weights_path = os.path.join(step_dir, f"worker_{self.worker_index}.pt")
-        torch.save(model.state_dict(), weights_path)
+    def sync(self, model, step):
+        weights_path = self._push_weights(model, step)
+        response = self.client.push_weights(self.worker_id, step, weights_path)
+        if not response.success:
+            self._block_until_resumed()
 
-    def _load_updated_weights(self, model):
-        response = self.client.get_updated_weights(self.worker_id)
-        weights = torch.load(response.weights_path, map_location=self.device, weights_only=True)
-        model.load_state_dict(weights)
-
-    def check_rebalance(self):
+        self._pull_updated_weights(model)
+        
+    def consume_rebalance(self):
         response = self.client.check_rebalance(self.worker_id)
         
         if response.pause:
-            print(f"[Worker {self.worker_id}] Pausado por el master, esperando...")
-            while True:
-                time.sleep(self.cfg.heartbeat_interval)
-                response = self.client.check_rebalance(self.worker_id)
-                if not response.pause:
-                    print(f"[Worker {self.worker_id}] Reanudando...")
-                    break
+            self._block_until_resumed()
+            response = self.client.check_rebalance(self.worker_id)
 
-        return response
-        
+        if response.rebalanced:
+            return {"start": response.new_start, "end": response.new_end}
+                
+        return None
+
+    
+            
+    def _push_weights(self, model, step):
+        step_dir = os.path.join(WORKER_WEIGHTS_DIR, f"step_{step}")
+        os.makedirs(step_dir, exist_ok=True)
+
+        state_dict = model.state_dict()
+        compressed, metadata = self.compressor.compress(state_dict)
+
+        weights_path = os.path.join(step_dir, f"worker_{self.worker_index}.pt")
+        torch.save({"weights": compressed, "metadata": metadata}, weights_path)
+        return weights_path
+    
+    
+    def _pull_updated_weights(self, model):
+        chunks = self.client.get_updated_weights(self.worker_id)
+        weights = self._chunks_to_state_dict(chunks)
+        model.load_state_dict(weights)
+
+    def _chunks_to_state_dict(self, chunks):
+        buf = io.BytesIO()
+        for chunk in chunks:
+            buf.write(chunk.data)
+        buf.seek(0)
+        return torch.load(buf, map_location=self.device, weights_only=True)
+
+    def _block_until_resumed(self):
+        print(f"[Worker {self.worker_id}] Pausado, esperando reanudación...")
+        while True:
+            time.sleep(self.cfg.heartbeat_interval)
+            response = self.client.check_rebalance(self.worker_id)
+            if not response.pause:
+                print(f"[Worker {self.worker_id}] Reanudado.")
+                return

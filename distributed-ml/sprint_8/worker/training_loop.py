@@ -5,6 +5,7 @@ import training_pb2
 from torch.utils.data import DataLoader
 from torch.optim import AdamW
 from dataset_factory import DatasetFactory
+
 class ModelOutput:
     def __init__(self, logits, loss):
         self.logits = logits
@@ -31,14 +32,14 @@ class TrainingLoop:
         for epoch in range(self.cfg.epochs):
             if stop_event.is_set():
                 return
-            rebalance = self.synchronizer.check_rebalance()
-            if rebalance.rebalanced:
-                start = rebalance.new_start
-                end = rebalance.new_end
+            shard = self.synchronizer.consume_rebalance()
+            if shard:
+                start, end = shard["start"], shard["end"]
                 print(f"[Worker] Época {epoch}: nuevo shard [{start}:{end}]")
-                dataset = DatasetFactory.load_shard("/data/train", int(start), int(end), dataset_info)
+                dataset = DatasetFactory.load_shard("/data/train", start, end, dataset_info)
                 train_loader, optim, accumulation_steps = self._setup(model, dataset)
-
+            elif epoch > 0:
+                train_loader, optim, accumulation_steps = self._setup(model, dataset, epoch)
             sync_every = self.cfg.sync_every_early if epoch == 0 else self.cfg.sync_every
             correct_predictions = 0
             total_samples = 0
@@ -48,8 +49,7 @@ class TrainingLoop:
                 if stop_event.is_set():
                     print("[Training] Stop recibido, saliendo del bucle")
                     return
-                if self.synchronizer.is_paused:
-                    self.synchronizer._wait_for_resume()
+
                 outputs, labels = self._forward(model, batch, dataset_info)
                 outputs.loss.backward()
                 pending_gradients = True
@@ -74,8 +74,16 @@ class TrainingLoop:
                 optim.zero_grad()
                 self.synchronizer.sync(model, batch_counter)
     
-    def _setup(self, model, dataset):
-        train_loader = DataLoader(dataset, batch_size=self.cfg.micro_batch_size, shuffle=True)
+    def _setup(self, model, dataset,  epoch=0):
+        generator = torch.Generator()
+        generator.manual_seed(self.cfg.seed + epoch) 
+        train_loader = DataLoader(
+            dataset,
+            batch_size=self.cfg.micro_batch_size,
+            shuffle=True,
+            generator=generator,
+            num_workers=0
+        )
         optim = AdamW(model.parameters(), lr=self.cfg.learning_rate)
         accumulation_steps = self.cfg.batch_size // self.cfg.micro_batch_size
         return train_loader, optim, accumulation_steps

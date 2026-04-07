@@ -5,7 +5,6 @@ from transformers import AutoTokenizer
 
 
 class DatasetFactory:
-
     
     SUPPORTED = {
         "ag_news": {

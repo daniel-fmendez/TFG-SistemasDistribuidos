@@ -76,5 +76,12 @@ class TrainingServicer:
         self.registry.mark_finished(request.worker_id)
         self.metrics_collector.record_epoch(self.cfg.epochs)
         return training_pb2.Ack(success=True, message=f"Worker {request.worker_id} finalizado")
-        
     
+    def CheckRebalance(self, request, context):
+        # TODO
+        return training_pb2.RebalanceResponse(
+            rebalance=# TODO,
+            pause=# TODO,
+            new_start=# TODO,
+            new_end=# TODO
+        )
