@@ -1,0 +1,6 @@
+minikube stop ; minikube delete ; minikube start --cpus 6 --memory 10240 --driver=docker ; ./build.sh ; kubectl apply -f rbac.yaml ; kubectl create configmap training-config --from-file=shared/config.yaml
+
+kubectl create namespace monitoring ; helm upgrade --install prometheus prometheus-community/prometheus --namespace monitoring -f prometheus-values.yaml ; helm upgrade --install grafana grafana/grafana --namespace monitoring -f grafana-values.yaml
+
+kubectl port-forward -n monitoring service/prometheus-server 9090:80
+kubectl port-forward -n monitoring service/grafana 3000:80
