@@ -36,11 +36,15 @@ class TrainingConfig:
         
         # Workers
         self.num_local_workers = int(raw["workers"]["num_local_workers"])
+        self.num_lan_workers = int(raw["workers"]["num_lan_workers"])
         self.num_remote_workers = int(raw["workers"]["num_remote_workers"])
-        self.num_workers = self.num_local_workers + self.num_remote_workers
+        self.num_workers = self.num_local_workers + self.num_remote_workers + self.num_lan_workers
         self.master_host = raw["workers"]["master_host"]
         self.master_port = int(raw["workers"]["master_port"])
         self.pvc_name = raw["workers"]["pvc_name"]
+        self.nfs_server = raw["workers"]["nfs_server"]
+        self.nfs_path = raw["workers"]["nfs_path"]
+        self.nfs_pv_name = raw["workers"]["nfs_pv_name"]
         
         # Heartbeat
         self.heartbeat_interval = int(raw["heartbeat"]["interval"])

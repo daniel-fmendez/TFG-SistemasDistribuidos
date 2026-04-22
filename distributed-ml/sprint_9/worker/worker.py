@@ -1,4 +1,5 @@
 import socket
+import os
 import threading
 import random
 import numpy as np
@@ -17,7 +18,10 @@ class DistributedTrainer:
         self.cfg = TrainingConfig()
         self.worker_id = socket.gethostname()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.client = GrpcClient(self.cfg.master_host, self.cfg.master_port)
+
+        master_host = os.environ.get("MASTER_HOST") or self.cfg.master_host
+        master_port = int(os.environ.get("MASTER_PORT") or self.cfg.master_port)
+        self.client = GrpcClient(master_host, master_port)
 
     def _set_seed(self):
         torch.manual_seed(self.cfg.seed)

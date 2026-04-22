@@ -20,6 +20,7 @@ class WorkerRegistry:
         self.finished_workers = set()
         self._lock = threading.Lock()
         self._all_ready = threading.Condition(self._lock)
+        self._training_barrier = threading.Barrier(self.num_workers)
 
         self.rebalanced = False 
         self._prepare_training()
@@ -177,3 +178,11 @@ class WorkerRegistry:
             if worker_id in self.worker_index_map:
                 return self.worker_index_map[worker_id]
             raise KeyError(f"Worker {worker_id} no encontrado")
+    
+    def wait_all_ready_to_train(self):
+        print(f"[Registry] Worker esperando barrera de inicio...")
+        try:
+            self._training_barrier.wait(timeout=300)
+            print(f"[Registry] Barrera superada, todos listos")
+        except threading.BrokenBarrierError:
+            raise RuntimeError("Barrera rota, algún worker no llegó a tiempo")

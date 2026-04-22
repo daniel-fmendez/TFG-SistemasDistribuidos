@@ -31,6 +31,7 @@ class TrainingServicer:
     
     def GetInitialWeights(self, request, context):
         self.registry.update_alive(request.worker_id)
+        self.registry.wait_all_ready_to_train() 
         path = self.aggregator.get_updated_weights()
         yield from self._stream_weights_file(path, request.worker_id)
 

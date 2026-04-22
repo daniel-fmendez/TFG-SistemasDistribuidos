@@ -33,9 +33,49 @@ def _create_master_serviceaccount(k8s):
     k8s.apply(role)
     k8s.apply(binding)
     print("ServiceAccount master-sa creado")
+def _cleanup(k8s):
+    """Limpia recursos anteriores antes de desplegar"""
+    import subprocess
+    
+    resources = [
+        ("job", "dataset-init"),
+        ("job", "master"),
+        ("service", "master-service"),
+    ]
+    
+    # Workers dinámicos
+    result = subprocess.run(
+        ["kubectl", "get", "jobs", "-o", "name", "-n", "default"],
+        capture_output=True, text=True
+    )
+    for line in result.stdout.splitlines():
+        if "worker-" in line:
+            name = line.split("/")[-1]
+            resources.append(("job", name))
+    
+    for kind, name in resources:
+        subprocess.run(
+            ["kubectl", "delete", kind, name, 
+             "--ignore-not-found", "--grace-period=0", "--force"],
+            capture_output=True
+        )
+    
+    # Esperar a que los pods desaparezcan
+    print("Esperando limpieza de pods...")
+    for _ in range(30):
+        result = subprocess.run(
+            ["kubectl", "get", "pods", "--no-headers"],
+            capture_output=True, text=True
+        )
+        if not result.stdout.strip():
+            break
+        time.sleep(2)
+    print("Limpieza completa")
+    
 def deploy():
     cfg = TrainingConfig()
     local_k8s = KubernetesOrchestrator()
+    _cleanup(local_k8s)
     _create_master_serviceaccount(local_k8s)
     config_path = os.getenv("CONFIG_PATH")
     # remote_k8s = KubernetesOrchestrator.build_remote(REMOTE_KUBECONFIG)

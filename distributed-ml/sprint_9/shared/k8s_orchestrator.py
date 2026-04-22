@@ -36,14 +36,30 @@ class KubernetesOrchestrator:
             print(f"Error al aplicar manifiesto: {e}")
 
     def create_workers(self, cfg):
-        for i in range(cfg.num_workers):
+        worker_id = 0
+
+        for i in range(cfg.num_local_workers):
             manifest = get_worker_job_template(
-                worker_id=i,
+                worker_id=worker_id,
                 master_host=cfg.master_host,
                 master_port=cfg.master_port,
-                pvc_name=cfg.pvc_name
+                pvc_name=cfg.pvc_name,
+                worker_type="local"
             )
             self.apply(manifest)
+            worker_id += 1
+
+        # Workers LAN
+        for i in range(cfg.num_lan_workers):
+            manifest = get_worker_job_template(
+                worker_id=worker_id,
+                master_host="192.168.1.129",
+                master_port=30051,
+                pvc_name=cfg.pvc_name,
+                worker_type="lan"
+            )
+            self.apply(manifest)
+            worker_id += 1
             
     def wait_job_completion(self, job_name, namespace="default", interval=5):
         while True:

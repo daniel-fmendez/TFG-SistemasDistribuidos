@@ -7,7 +7,7 @@ def get_pvc_template(name, size_gi, storage_class="local-path"):
             "name": name,
         },
         "spec": {
-            "accessModes": ["ReadWriteOnce"],
+            "accessModes": ["ReadWriteMany"],
             "storageClassName": storage_class,
             "resources": {
                 "requests": {
@@ -25,10 +25,15 @@ def get_dataset_init_job_template(job_name, pvc_name, image):
             "name": job_name,
         },
         "spec": {
+            "ttlSecondsAfterFinished": 30,
             "backoffLimit": 2,
             "template": {
                 "spec": {
                     "restartPolicy": "Never",
+                    "imagePullPolicy": "Never",
+                    "nodeSelector": {
+                        "role": "local" 
+                    },
                     "containers": [
                         {
                             "name": "dataset-loader",
@@ -64,7 +69,20 @@ def get_dataset_init_job_template(job_name, pvc_name, image):
         }
     }
 
-def get_worker_job_template(worker_id, master_host, master_port, pvc_name):
+def get_worker_job_template(worker_id, master_host, master_port, pvc_name, worker_type="local"):
+    
+    # DNS config solo para workers LAN y remotos
+    if worker_type in ("lan", "remote"):
+        dns_policy = "None"
+        dns_config = {
+            "nameservers": ["8.8.8.8", "1.1.1.1"],
+            "searches": ["default.svc.cluster.local", "svc.cluster.local"],
+            "options": [{"name": "ndots", "value": "5"}]
+        }
+    else:
+        dns_policy = "ClusterFirst"
+        dns_config = {}
+
     return {
         "apiVersion": "batch/v1",
         "kind": "Job",
@@ -72,6 +90,7 @@ def get_worker_job_template(worker_id, master_host, master_port, pvc_name):
             "name": f"worker-{worker_id}",
         },
         "spec": {
+            "ttlSecondsAfterFinished": 30,
             "backoffLimit": 2,
             "template": {
                 "metadata": {
@@ -82,58 +101,39 @@ def get_worker_job_template(worker_id, master_host, master_port, pvc_name):
                 },
                 "spec": {
                     "restartPolicy": "Never",
+                    "nodeSelector": {
+                        "role": worker_type
+                    },
+                    "dnsPolicy": dns_policy,
+                    "dnsConfig": dns_config,
                     "containers": [
                         {
                             "name": "worker",
                             "image": "my-worker:v6",
+                            "imagePullPolicy": "Never",
                             "env": [
-                                {
-                                    "name": "MASTER_HOST",
-                                    "value": master_host
-                                },
-                                {
-                                    "name": "MASTER_PORT",
-                                    "value": str(master_port)
-                                },
-                                {
-                                    "name": "PYTHONUNBUFFERED",
-                                    "value": "1"
-                                }
+                                {"name": "MASTER_HOST", "value": master_host},
+                                {"name": "MASTER_PORT", "value": str(master_port)},
+                                {"name": "PYTHONUNBUFFERED", "value": "1"}
                             ],
                             "volumeMounts": [
-                                {
-                                    "name": "dataset-storage",
-                                    "mountPath": "/data"
-                                },
-                                {
-                                    "name": "config-volume",
-                                    "mountPath": "/app/config"
-                                }
+                                {"name": "dataset-storage", "mountPath": "/data"},
+                                {"name": "config-volume", "mountPath": "/app/config"}
                             ],
                             "resources": {
-                                "requests": {
-                                    "memory": "2Gi",
-                                    "cpu": "1000m"
-                                },
-                                "limits": {
-                                    "memory": "4Gi",
-                                    "cpu": "2000m"
-                                }
+                                "requests": {"memory": "2Gi", "cpu": "1000m"},
+                                "limits": {"memory": "4Gi", "cpu": "2000m"}
                             }
                         }
                     ],
                     "volumes": [
                         {
                             "name": "dataset-storage",
-                            "persistentVolumeClaim": {
-                                "claimName": pvc_name
-                            }
+                            "persistentVolumeClaim": {"claimName": pvc_name}
                         },
                         {
                             "name": "config-volume",
-                            "configMap": {
-                                "name": "training-config"
-                            }
+                            "configMap": {"name": "training-config"}
                         }
                     ]
                 }
@@ -152,6 +152,7 @@ def get_master_job_template(job_name, image, pvc_name):
             }
         },
         "spec": {
+            "ttlSecondsAfterFinished": 30,
             "template": {
                 "metadata": {
                     "labels": {
@@ -161,6 +162,9 @@ def get_master_job_template(job_name, image, pvc_name):
                 "spec": {
                     "serviceAccountName": "master-sa",
                     "restartPolicy": "Never",
+                    "nodeSelector": {
+                        "role": "local" 
+                    },
                     "containers": [
                         {
                             "name": "master",
@@ -308,3 +312,45 @@ def get_master_rbac_templates():
         ]
     }
     return sa, role, role_binding
+
+def get_nfs_pv_template(pv_name, nfs_server, nfs_path, size_gi=15):
+    return {
+        "apiVersion": "v1",
+        "kind": "PersistentVolume",
+        "metadata": {"name": pv_name},
+        "spec": {
+            "capacity": {"storage": f"{size_gi}Gi"},
+            "accessModes": ["ReadWriteMany"],
+            "persistentVolumeReclaimPolicy": "Retain",
+            "mountOptions": [
+                "soft",        # no bloquear indefinidamente
+                "timeo=30",    # timeout 3 segundos (unidades de 0.1s)
+                "retrans=3",   # 3 reintentos
+                "nolock"       # evitar bloqueos NFS
+            ],
+            "nfs": {
+                "server": nfs_server,
+                "path": nfs_path
+            }
+        }
+    }
+
+def get_nfs_pvc_template(pvc_name, pv_name, size_gi=15):
+    return {
+        "apiVersion": "v1",
+        "kind": "PersistentVolumeClaim",
+        "metadata": {
+            "name": pvc_name,
+            "namespace": "default"
+        },
+        "spec": {
+            "accessModes": ["ReadWriteMany"],
+            "resources": {
+                "requests": {
+                    "storage": f"{size_gi}Gi"
+                }
+            },
+            "volumeName": pv_name,
+            "storageClassName": ""
+        }
+    }

@@ -42,6 +42,10 @@ class HeartbeatMonitor:
         self.registry = worker_registry
 
     def monitor_loop(self):
+        while len(self.registry.worker_last_seen) < self.registry.num_workers:
+            time.sleep(2)
+        print("[HeartbeatMonitor] Todos registrados, empezando monitorización")
+        
         while True:
             time.sleep(self.cfg.heartbeat_interval)
             now = time.time() 

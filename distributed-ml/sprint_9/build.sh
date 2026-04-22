@@ -12,8 +12,26 @@ docker save deployer:v2 | sudo k3s ctr images import -
 docker save my-master:v6 | sudo k3s ctr images import -
 docker save my-worker:v6 | sudo k3s ctr images import -
 
-echo "Escritura completa!"
+echo "Escritura local completa!"
 
+# LAN
+LAN_USER=dani
+LAN_HOST=192.168.1.10
+
+echo "Exportando imágenes para LAN..."
+docker save my-worker:v6 -o /tmp/my-worker-v6.tar
+docker save data-provision:v2 -o /tmp/data-provision-v2.tar
+
+echo "Copiando a LAN $LAN_USER@$LAN_HOST..."
+scp /tmp/my-worker-v6.tar $LAN_USER@$LAN_HOST:/tmp/
+scp /tmp/data-provision-v2.tar $LAN_USER@$LAN_HOST:/tmp/
+
+echo "Importando en k3s LAN..."
+ssh $LAN_USER@$LAN_HOST "sudo k3s ctr images import /tmp/my-worker-v6.tar && rm /tmp/my-worker-v6.tar"
+ssh $LAN_USER@$LAN_HOST "sudo k3s ctr images import /tmp/data-provision-v2.tar && rm /tmp/data-provision-v2.tar"
+
+rm /tmp/my-worker-v6.tar /tmp/data-provision-v2.tar
+echo "Escritura LAN completa!"
 # Remote
 
 :' REMOTE_USER=danfer
