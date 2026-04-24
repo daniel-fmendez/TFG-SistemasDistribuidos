@@ -42,9 +42,7 @@ class TrainingConfig:
         self.master_host = raw["workers"]["master_host"]
         self.master_port = int(raw["workers"]["master_port"])
         self.pvc_name = raw["workers"]["pvc_name"]
-        self.nfs_server = raw["workers"]["nfs_server"]
-        self.nfs_path = raw["workers"]["nfs_path"]
-        self.nfs_pv_name = raw["workers"]["nfs_pv_name"]
+        self.lan_pvc_name = raw["workers"]["lan_pvc_name"]
         
         # Heartbeat
         self.heartbeat_interval = int(raw["heartbeat"]["interval"])

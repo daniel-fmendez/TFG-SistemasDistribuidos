@@ -79,11 +79,10 @@ class TrainingLoop:
                 optim.zero_grad()
                 self.synchronizer.sync(model, batch_counter)
 
-            """
-            if self.metrics_collector:
-                self.metrics_collector.record_epoch_end(worker_id, total_samples)
-            """
-    
+            print(f"[Worker] Esperando barrera época {epoch}...")
+            self.client.sync_epoch(worker_id, epoch)
+            print(f"[Worker] Barrera época {epoch} superada, continuando")
+            
     def _setup(self, model, dataset,  epoch=0):
         generator = torch.Generator()
         generator.manual_seed(self.cfg.seed + epoch) 

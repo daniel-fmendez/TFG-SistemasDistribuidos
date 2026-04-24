@@ -22,6 +22,10 @@ class WorkerRegistry:
         self._all_ready = threading.Condition(self._lock)
         self._training_barrier = threading.Barrier(self.num_workers)
 
+        self._epoch_barriers = {}
+        self._epoch_events = {}
+        self._epoch_expected = {}
+        
         self.rebalanced = False 
         self._prepare_training()
 
@@ -186,3 +190,25 @@ class WorkerRegistry:
             print(f"[Registry] Barrera superada, todos listos")
         except threading.BrokenBarrierError:
             raise RuntimeError("Barrera rota, algún worker no llegó a tiempo")
+        
+    def wait_epoch_sync(self, worker_id, epoch):
+        with self._lock:
+            if epoch not in self._epoch_barriers:
+                self._epoch_barriers[epoch] = set()
+                self._epoch_events[epoch] = threading.Event()
+                # Snapshot fijo cuando llega el primero
+                self._epoch_expected[epoch] = len(self.alive_workers)
+                print(f"[Registry] Barrera época {epoch}: esperando {self._epoch_expected[epoch]} workers")
+            
+            self._epoch_barriers[epoch].add(worker_id)
+            print(f"[Registry] Worker {worker_id} en barrera época {epoch} "
+                f"({len(self._epoch_barriers[epoch])}/{self._epoch_expected[epoch]})")
+            
+            if len(self._epoch_barriers[epoch]) >= self._epoch_expected[epoch]:
+                self._epoch_events[epoch].set()
+        
+        reached = self._epoch_events[epoch].wait(timeout=300)
+        if not reached:
+            print(f"[Registry] TIMEOUT barrera época {epoch} para worker {worker_id}")
+        else:
+            print(f"[Registry] Worker {worker_id} barrera época {epoch} superada")

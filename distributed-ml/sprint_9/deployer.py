@@ -82,7 +82,16 @@ def deploy():
 
     # local_k8s.ensure_remote_configmap(remote_k8s._core)
     _create_local_configmap(local_k8s, config_path)
-    local_provisioner = DatasetProvisioner(cfg, local_k8s)
+    local_provisioner = DatasetProvisioner(
+        cfg, local_k8s,
+        pvc_name=cfg.pvc_name,
+        node_role="local"
+    )
+    lan_provisioner = DatasetProvisioner(
+        cfg, local_k8s,
+        pvc_name=cfg.lan_pvc_name,
+        node_role="lan"
+    )
     # remote_provisioner = DatasetProvisioner(cfg, remote_k8s)
     
     errors = []
@@ -93,12 +102,15 @@ def deploy():
             errors.append(f"{label}: {e}")
 
     t_local = threading.Thread(target=run, args=(local_provisioner, "local"))
+    t_lan = threading.Thread(target=run, args=(lan_provisioner, "lan"))
     # t_remote = threading.Thread(target=run, args=(remote_provisioner, "remoto"))
 
     print("Provisionando dataset en local y remoto en paralelo...")
     t_local.start()
+    t_lan.start()
     # t_remote.start()
     t_local.join()
+    t_lan.join()
     # t_remote.join()
 
     if errors:

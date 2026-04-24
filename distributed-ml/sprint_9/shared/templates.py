@@ -1,4 +1,3 @@
-
 def get_pvc_template(name, size_gi, storage_class="local-path"):
     return {
         "apiVersion": "v1",
@@ -7,7 +6,7 @@ def get_pvc_template(name, size_gi, storage_class="local-path"):
             "name": name,
         },
         "spec": {
-            "accessModes": ["ReadWriteMany"],
+            "accessModes": ["ReadWriteOnce"],
             "storageClassName": storage_class,
             "resources": {
                 "requests": {
@@ -17,7 +16,7 @@ def get_pvc_template(name, size_gi, storage_class="local-path"):
         }
     }
 
-def get_dataset_init_job_template(job_name, pvc_name, image):
+def get_dataset_init_job_template(job_name, pvc_name, image, node_role="local"):
     return {
         "apiVersion": "batch/v1",
         "kind": "Job",
@@ -25,19 +24,20 @@ def get_dataset_init_job_template(job_name, pvc_name, image):
             "name": job_name,
         },
         "spec": {
-            "ttlSecondsAfterFinished": 30,
+            "ttlSecondsAfterFinished": 180,
             "backoffLimit": 2,
             "template": {
                 "spec": {
                     "restartPolicy": "Never",
-                    "imagePullPolicy": "Never",
+                    
                     "nodeSelector": {
-                        "role": "local" 
+                        "role": node_role
                     },
                     "containers": [
                         {
                             "name": "dataset-loader",
                             "image": image,
+                            "imagePullPolicy": "Never",
                             "volumeMounts": [
                                 {
                                     "name": "dataset-vol",
@@ -53,8 +53,9 @@ def get_dataset_init_job_template(job_name, pvc_name, image):
                     "volumes": [
                         {
                             "name": "dataset-vol",
-                            "persistentVolumeClaim": {
-                                "claimName": pvc_name
+                            "hostPath": {
+                                "path": "/var/lib/k3s-data/dataset",
+                                "type": "DirectoryOrCreate"
                             }
                         },
                         {
@@ -90,7 +91,7 @@ def get_worker_job_template(worker_id, master_host, master_port, pvc_name, worke
             "name": f"worker-{worker_id}",
         },
         "spec": {
-            "ttlSecondsAfterFinished": 30,
+            "ttlSecondsAfterFinished": 180,
             "backoffLimit": 2,
             "template": {
                 "metadata": {
@@ -129,7 +130,10 @@ def get_worker_job_template(worker_id, master_host, master_port, pvc_name, worke
                     "volumes": [
                         {
                             "name": "dataset-storage",
-                            "persistentVolumeClaim": {"claimName": pvc_name}
+                            "hostPath": {
+                                "path": "/var/lib/k3s-data/dataset",
+                                "type": "DirectoryOrCreate"
+                            }
                         },
                         {
                             "name": "config-volume",
@@ -152,7 +156,7 @@ def get_master_job_template(job_name, image, pvc_name):
             }
         },
         "spec": {
-            "ttlSecondsAfterFinished": 30,
+            "ttlSecondsAfterFinished": 180,
             "template": {
                 "metadata": {
                     "labels": {
@@ -202,8 +206,9 @@ def get_master_job_template(job_name, image, pvc_name):
                     "volumes": [
                         {
                             "name": "master-storage",
-                            "persistentVolumeClaim": {
-                                "claimName": pvc_name
+                            "hostPath": {
+                                "path": "/var/lib/k3s-data/dataset",
+                                "type": "DirectoryOrCreate"
                             }
                         },
                         {
@@ -313,6 +318,7 @@ def get_master_rbac_templates():
     }
     return sa, role, role_binding
 
+"""
 def get_nfs_pv_template(pv_name, nfs_server, nfs_path, size_gi=15):
     return {
         "apiVersion": "v1",
@@ -326,7 +332,8 @@ def get_nfs_pv_template(pv_name, nfs_server, nfs_path, size_gi=15):
                 "soft",        # no bloquear indefinidamente
                 "timeo=30",    # timeout 3 segundos (unidades de 0.1s)
                 "retrans=3",   # 3 reintentos
-                "nolock"       # evitar bloqueos NFS
+                "nolock",       # evitar bloqueos NFS
+                "noresvport"
             ],
             "nfs": {
                 "server": nfs_server,
@@ -354,3 +361,4 @@ def get_nfs_pvc_template(pvc_name, pv_name, size_gi=15):
             "storageClassName": ""
         }
     }
+"""

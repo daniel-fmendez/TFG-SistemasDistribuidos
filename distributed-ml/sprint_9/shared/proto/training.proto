@@ -10,6 +10,7 @@ service TrainingService {
   rpc ReportMetrics(MetricData) returns (Ack);
   rpc FinishTraining(FinishRequest) returns (Ack);
   rpc CheckRebalance(WorkerRequest) returns (RebalanceResponse);
+  rpc SyncEpoch(EpochSyncRequest) returns (Ack);
 }
 
 message WorkerRequest {
@@ -58,4 +59,9 @@ message RebalanceResponse {
   bool pause = 2;
   int32 new_start = 3;
   int32 new_end = 4;
+}
+
+message EpochSyncRequest {
+  string worker_id = 1;
+  int32 epoch = 2;
 }

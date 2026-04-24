@@ -55,7 +55,7 @@ class KubernetesOrchestrator:
                 worker_id=worker_id,
                 master_host="192.168.1.129",
                 master_port=30051,
-                pvc_name=cfg.pvc_name,
+                pvc_name=cfg.lan_pvc_name,
                 worker_type="lan"
             )
             self.apply(manifest)

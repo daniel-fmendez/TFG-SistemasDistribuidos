@@ -33,7 +33,6 @@ class DistributedTrainer:
             torch.backends.cudnn.benchmark = False
 
     def run(self):
-        
         try:
             stop_event = threading.Event()
             
@@ -48,7 +47,7 @@ class DistributedTrainer:
 
             shard_len = self.cfg.total_samples // self.cfg.num_workers
             worker_index = signal.worker_index
-
+            
             synchronizer = WeightSynchronizer(
                 config=self.cfg,
                 worker_id=self.worker_id,

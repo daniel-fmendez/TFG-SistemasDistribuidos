@@ -117,6 +117,9 @@ class TrainingServicer:
             new_start=0,
             new_end=0
         )
+    def SyncEpoch(self, request, context):
+        self.registry.wait_epoch_sync(request.worker_id, request.epoch)
+        return training_pb2.Ack(success=True, message="Época sincronizada")
     
     def _stream_weights_file(self, path, worker_id):
         total = os.path.getsize(path)

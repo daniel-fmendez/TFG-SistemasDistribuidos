@@ -76,6 +76,11 @@ class GrpcClient:
             training_pb2.WorkerRequest(worker_id=worker_id)
         )
     
+    def sync_epoch(self, worker_id, epoch):
+        return self.training_stub.SyncEpoch(
+            training_pb2.EpochSyncRequest(worker_id=worker_id, epoch=epoch)
+        )
+
     # Heartbeat
     def send_heartbeat(self, worker_id, timestamp):
         metrics = extra_functions.get_system_metrics()
