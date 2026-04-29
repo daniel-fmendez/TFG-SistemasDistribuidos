@@ -33,6 +33,7 @@ class TrainingLoop:
             if stop_event.is_set():
                 return
             shard = self.synchronizer.consume_rebalance()
+            self.client.start_epoch(worker_id, epoch, datetime.datetime.now().timestamp())
             if shard:
                 start, end = shard["start"], shard["end"]
                 print(f"[Worker] Época {epoch}: nuevo shard [{start}:{end}]")
@@ -45,11 +46,6 @@ class TrainingLoop:
             total_samples = 0
             pending_gradients = False
             
-            """
-            if self.metrics_collector:
-                self.metrics_collector.record_epoch_start(worker_id)
-            """
-
             for step, batch in enumerate(train_loader):
                 if stop_event.is_set():
                     print("[Training] Stop recibido, saliendo del bucle")
@@ -80,7 +76,7 @@ class TrainingLoop:
                 self.synchronizer.sync(model, batch_counter)
 
             print(f"[Worker] Esperando barrera época {epoch}...")
-            self.client.sync_epoch(worker_id, epoch)
+            self.client.sync_epoch(worker_id, epoch, datetime.datetime.now().timestamp(), total_samples)
             print(f"[Worker] Barrera época {epoch} superada, continuando")
             
     def _setup(self, model, dataset,  epoch=0):
@@ -131,7 +127,7 @@ class TrainingLoop:
                 step=step,
                 loss=outputs.loss.item(),
                 accuracy=accuracy,
-                timestamp=datetime.datetime.now().isoformat(),
+                timestamp=datetime.datetime.now().timestamp(),
             ))
             print(f"Epoch {epoch}, Step {step}: Loss={outputs.loss:.4f}, Acc={accuracy:.4f}")
 

@@ -7,10 +7,12 @@ service TrainingService {
   rpc GetInitialWeights(WeightRequest) returns (stream WeightChunk);
   rpc PushWeights(stream WeightChunk) returns (Ack);
   rpc GetUpdatedWeights(WeightRequest) returns (stream WeightChunk);
+  rpc ReportEpochStart(StartRequest) returns (Ack);
   rpc ReportMetrics(MetricData) returns (Ack);
   rpc FinishTraining(FinishRequest) returns (Ack);
   rpc CheckRebalance(WorkerRequest) returns (RebalanceResponse);
   rpc SyncEpoch(EpochSyncRequest) returns (Ack);
+  rpc ReportSyncMetrics(SyncDuration) returns (Ack);
 }
 
 message WorkerRequest {
@@ -35,7 +37,7 @@ message MetricData {
   int32 step = 3;
   float loss = 4;
   float accuracy = 5;
-  string timestamp = 6;
+  double timestamp = 6;
 }
 message FinishRequest {
   string worker_id = 1;
@@ -64,4 +66,18 @@ message RebalanceResponse {
 message EpochSyncRequest {
   string worker_id = 1;
   int32 epoch = 2;
+  double timestamp = 3;
+  int32 total_samples = 4;
+}
+
+message StartRequest {
+  string worker_id = 1;
+  int32 epoch = 2;
+  double timestamp = 3;
+}
+
+message SyncDuration {
+  string worker_id = 1;
+  int64 last_bytes_sent = 2;
+  double last_sync_duration = 3;
 }

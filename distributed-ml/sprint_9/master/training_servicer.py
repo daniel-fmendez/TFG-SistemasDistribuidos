@@ -119,7 +119,25 @@ class TrainingServicer:
         )
     def SyncEpoch(self, request, context):
         self.registry.wait_epoch_sync(request.worker_id, request.epoch)
+        self.metrics_collector.record_epoch_end(
+            worker_id=request.worker_id,
+            timestamp=request.timestamp,
+            epoch=request.epoch,
+            samples_in_epoch=request.total_samples
+        )
         return training_pb2.Ack(success=True, message="Época sincronizada")
+    
+    def ReportEpochStart(self, request, context):
+        self.metrics_collector.record_epoch_start(
+            worker_id=request.worker_id,
+            timestamp=request.timestamp
+        )
+        return training_pb2.Ack(success=True, message=f"Epoch {request.epoch} start recorded")
+    
+    def ReportSyncMetrics(self, request, context):
+        self.metrics_collector.record_sync_duration(worker_id=request.worker_id, duration_seconds=request.last_sync_duration)
+        self.metrics_collector.record_bytes_sent(worker_id=request.worker_id, bytes_sent=request.last_bytes_sent)
+        return training_pb2.Ack(success=True, message="Sync metrics")
     
     def _stream_weights_file(self, path, worker_id):
         total = os.path.getsize(path)

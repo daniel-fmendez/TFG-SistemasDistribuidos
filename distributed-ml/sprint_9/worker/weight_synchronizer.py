@@ -28,12 +28,20 @@ class WeightSynchronizer:
         model.load_state_dict(weights)
 
     def sync(self, model, step):
+        sync_start = time.time()
+
         weights_path = self._push_weights(model, step)
+
+        bytes_sent = os.path.getsize(weights_path)
+
         response = self.client.push_weights(self.worker_id, step, weights_path)
         if not response.success:
             self._block_until_resumed()
 
         self._pull_updated_weights(model)
+        sync_duration = time.time() - sync_start
+
+        self.client.report_sync_metrics(self.worker_id, bytes_sent, sync_duration)
         
     def consume_rebalance(self):
         response = self.client.check_rebalance(self.worker_id)

@@ -1,5 +1,6 @@
 from prometheus_client import Gauge, Counter, start_http_server
 import time
+from datetime import datetime
 
 class MetricsCollector:
     def __init__(self):
@@ -17,7 +18,8 @@ class MetricsCollector:
         self.epoch = Gauge('epoch', 'Epoch actual')
         self.last_epoch = {}
         # Sprint 9 nuevas metricas
-        self.epoch_duration_seconds = Gauge('epoch_duration_seconds', 'Duración de la última epoch en segundos', ['worker_id'])
+        self.network_bytes_sent = Counter('network_bytes_sent', 'Bytes enviados por worker', ['worker_id'])
+        self.epoch_duration_seconds = Gauge('epoch_duration_seconds', 'Duración de la última epoch en segundos', ['worker_id', 'epoch'])
         self.sync_duration_seconds = Gauge('sync_duration_seconds', 'Duración del último ciclo de sincronización (push+pull) en segundos', ['worker_id'])
         self.throughput_samples_per_second = Gauge('throughput_samples_per_second', 'Muestras procesadas por segundo en la última epoch', ['worker_id'])
 
@@ -68,16 +70,17 @@ class MetricsCollector:
         self.workers_finished.set(finished + dead)
         self.workers_registered.set(total - finished - dead)
 
-    # TODO IMPLEMENT
-    def record_epoch_start(self, worker_id):
-        self._epoch_start_times[worker_id] = time.time()
+    
+    def record_epoch_start(self, worker_id, timestamp):
+        self._epoch_start_times[worker_id] = timestamp
 
-    def record_epoch_end(self, worker_id, samples_in_epoch):
+    def record_epoch_end(self, worker_id, timestamp, epoch, samples_in_epoch):
         start = self._epoch_start_times.get(worker_id)
+        end = timestamp
         if start is None:
             return
-        duration = time.time() - start
-        self.epoch_duration_seconds.labels(worker_id=worker_id).set(duration)
+        duration = end - start
+        self.epoch_duration_seconds.labels(worker_id=worker_id, epoch=str(epoch)).set(duration)
         if duration > 0:
             self.throughput_samples_per_second.labels(worker_id=worker_id).set(
                 samples_in_epoch / duration
@@ -85,3 +88,6 @@ class MetricsCollector:
 
     def record_sync_duration(self, worker_id, duration_seconds):
         self.sync_duration_seconds.labels(worker_id=worker_id).set(duration_seconds)
+
+    def record_bytes_sent(self, worker_id, bytes_sent):
+        self.network_bytes_sent.labels(worker_id=worker_id).inc(bytes_sent)

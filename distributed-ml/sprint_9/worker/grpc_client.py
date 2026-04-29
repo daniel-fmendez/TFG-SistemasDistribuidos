@@ -76,11 +76,20 @@ class GrpcClient:
             training_pb2.WorkerRequest(worker_id=worker_id)
         )
     
-    def sync_epoch(self, worker_id, epoch):
+    def sync_epoch(self, worker_id, epoch, timestamp, total_samples=0):
         return self.training_stub.SyncEpoch(
-            training_pb2.EpochSyncRequest(worker_id=worker_id, epoch=epoch)
+            training_pb2.EpochSyncRequest(worker_id=worker_id, epoch=epoch, timestamp=timestamp, total_samples=total_samples)
         )
 
+    def start_epoch(self, worker_id, epoch, timestamp):
+        return self.training_stub.ReportEpochStart(
+            training_pb2.StartRequest(worker_id=worker_id, epoch=epoch, timestamp=timestamp)
+        )
+    def report_sync_metrics(self, worker_id, bytes_sent, sync_duration):
+        return self.training_stub.ReportSyncMetrics(
+            training_pb2.SyncDuration(worker_id=worker_id, last_bytes_sent=bytes_sent, last_sync_duration=sync_duration)
+        )
+    
     # Heartbeat
     def send_heartbeat(self, worker_id, timestamp):
         metrics = extra_functions.get_system_metrics()

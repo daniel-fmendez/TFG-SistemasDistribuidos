@@ -54,6 +54,11 @@ class TrainingServiceStub(object):
                 request_serializer=training__pb2.WeightRequest.SerializeToString,
                 response_deserializer=training__pb2.WeightChunk.FromString,
                 _registered_method=True)
+        self.ReportEpochStart = channel.unary_unary(
+                '/training.TrainingService/ReportEpochStart',
+                request_serializer=training__pb2.StartRequest.SerializeToString,
+                response_deserializer=training__pb2.Ack.FromString,
+                _registered_method=True)
         self.ReportMetrics = channel.unary_unary(
                 '/training.TrainingService/ReportMetrics',
                 request_serializer=training__pb2.MetricData.SerializeToString,
@@ -72,6 +77,11 @@ class TrainingServiceStub(object):
         self.SyncEpoch = channel.unary_unary(
                 '/training.TrainingService/SyncEpoch',
                 request_serializer=training__pb2.EpochSyncRequest.SerializeToString,
+                response_deserializer=training__pb2.Ack.FromString,
+                _registered_method=True)
+        self.ReportSyncMetrics = channel.unary_unary(
+                '/training.TrainingService/ReportSyncMetrics',
+                request_serializer=training__pb2.SyncDuration.SerializeToString,
                 response_deserializer=training__pb2.Ack.FromString,
                 _registered_method=True)
 
@@ -103,6 +113,12 @@ class TrainingServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ReportEpochStart(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def ReportMetrics(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -122,6 +138,12 @@ class TrainingServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def SyncEpoch(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ReportSyncMetrics(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -150,6 +172,11 @@ def add_TrainingServiceServicer_to_server(servicer, server):
                     request_deserializer=training__pb2.WeightRequest.FromString,
                     response_serializer=training__pb2.WeightChunk.SerializeToString,
             ),
+            'ReportEpochStart': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReportEpochStart,
+                    request_deserializer=training__pb2.StartRequest.FromString,
+                    response_serializer=training__pb2.Ack.SerializeToString,
+            ),
             'ReportMetrics': grpc.unary_unary_rpc_method_handler(
                     servicer.ReportMetrics,
                     request_deserializer=training__pb2.MetricData.FromString,
@@ -168,6 +195,11 @@ def add_TrainingServiceServicer_to_server(servicer, server):
             'SyncEpoch': grpc.unary_unary_rpc_method_handler(
                     servicer.SyncEpoch,
                     request_deserializer=training__pb2.EpochSyncRequest.FromString,
+                    response_serializer=training__pb2.Ack.SerializeToString,
+            ),
+            'ReportSyncMetrics': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReportSyncMetrics,
+                    request_deserializer=training__pb2.SyncDuration.FromString,
                     response_serializer=training__pb2.Ack.SerializeToString,
             ),
     }
@@ -290,6 +322,33 @@ class TrainingService(object):
             _registered_method=True)
 
     @staticmethod
+    def ReportEpochStart(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/training.TrainingService/ReportEpochStart',
+            training__pb2.StartRequest.SerializeToString,
+            training__pb2.Ack.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def ReportMetrics(request,
             target,
             options=(),
@@ -386,6 +445,33 @@ class TrainingService(object):
             target,
             '/training.TrainingService/SyncEpoch',
             training__pb2.EpochSyncRequest.SerializeToString,
+            training__pb2.Ack.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ReportSyncMetrics(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/training.TrainingService/ReportSyncMetrics',
+            training__pb2.SyncDuration.SerializeToString,
             training__pb2.Ack.FromString,
             options,
             channel_credentials,

@@ -98,7 +98,21 @@ class WorkerRegistry:
             dead = len(self.dead_workers)
             self.metrics_collector.update_completion(finished, dead, self.num_workers)
             print(f"Worker {worker_id} finalizado. ({finished}/{self.num_workers})")
-            all_done = finished == self.num_workers
+            all_done = (finished + dead) >= self.num_workers
+
+            if not self.alive_workers and not all_done:
+                print("[Registry] No quedan workers vivos, finalizando...")
+                all_done = True
+
+            for epoch, barrier in self._epoch_barriers.items():
+                if epoch in self._epoch_expected:
+                    self._epoch_expected[epoch] = min(
+                        self._epoch_expected[epoch],
+                        len(self.alive_workers) + len(self.finished_workers)
+                    )
+                    if len(barrier) >= self._epoch_expected[epoch]:
+                        print(f"[Registry] Worker finalizado, liberando barrera época {epoch}")
+                        self._epoch_events[epoch].set()
 
         if all_done and self._on_all_finished:
             self._on_all_finished()
@@ -132,6 +146,16 @@ class WorkerRegistry:
                     self.metrics_collector.mark_worker_dead(wid)
                     del self.worker_last_seen[wid]
                     newly_dead.append(wid)
+
+                    for epoch, barrier in self._epoch_barriers.items():
+                        if epoch in self._epoch_expected:
+                            self._epoch_expected[epoch] = min(
+                                self._epoch_expected[epoch],
+                                len(self.alive_workers) + len(barrier)
+                            )
+                            if len(barrier) >= self._epoch_expected[epoch]:
+                                print(f"[Registry] Worker muerto, liberando barrera época {epoch}")
+                                self._epoch_events[epoch].set()
 
             finished = len(self.finished_workers)
             dead_count = len(self.dead_workers)
@@ -191,24 +215,25 @@ class WorkerRegistry:
         except threading.BrokenBarrierError:
             raise RuntimeError("Barrera rota, algún worker no llegó a tiempo")
         
+        
     def wait_epoch_sync(self, worker_id, epoch):
         with self._lock:
             if epoch not in self._epoch_barriers:
                 self._epoch_barriers[epoch] = set()
                 self._epoch_events[epoch] = threading.Event()
-                # Snapshot fijo cuando llega el primero
                 self._epoch_expected[epoch] = len(self.alive_workers)
                 print(f"[Registry] Barrera época {epoch}: esperando {self._epoch_expected[epoch]} workers")
             
             self._epoch_barriers[epoch].add(worker_id)
-            print(f"[Registry] Worker {worker_id} en barrera época {epoch} "
-                f"({len(self._epoch_barriers[epoch])}/{self._epoch_expected[epoch]})")
+            received = len(self._epoch_barriers[epoch])
+            expected = self._epoch_expected[epoch]
+            print(f"[Registry] Worker {worker_id} en barrera época {epoch} ({received}/{expected})")
             
-            if len(self._epoch_barriers[epoch]) >= self._epoch_expected[epoch]:
+            if received >= expected:
                 self._epoch_events[epoch].set()
         
         reached = self._epoch_events[epoch].wait(timeout=300)
         if not reached:
-            print(f"[Registry] TIMEOUT barrera época {epoch} para worker {worker_id}")
-        else:
-            print(f"[Registry] Worker {worker_id} barrera época {epoch} superada")
+            print(f"[Registry] TIMEOUT barrera época {epoch}, liberando de todas formas")
+            self._epoch_events[epoch].set()
+        print(f"[Registry] Worker {worker_id} barrera época {epoch} superada")

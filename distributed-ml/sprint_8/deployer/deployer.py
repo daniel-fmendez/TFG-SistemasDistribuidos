@@ -12,7 +12,7 @@ def deploy():
     local_k8s = KubernetesOrchestrator()
     # remote_k8s = KubernetesOrchestrator.build_remote(REMOTE_KUBECONFIG)
 
-    # local_k8s.ensure_remote_configmap(remote_k8s._core)
+    # local_k8s.ensure_remote_configmap(remote_k8s._core
 
     local_provisioner = DatasetProvisioner(cfg, local_k8s)
     # remote_provisioner = DatasetProvisioner(cfg, remote_k8s)

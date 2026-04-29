@@ -20,11 +20,12 @@ class HeartbeatLoop:
                 if not response.ack:
                     print("[Heartbeat] Master rechazó el heartbeat, deteniendo worker")
                     self.stop_event.set()
-                #Gestionar la respuesta
 
             except grpc.RpcError as e:
                 if e.code() == grpc.StatusCode.UNAVAILABLE:
                     print("[Heartbeat] Servidor caído o inalcanzable, deteniendo worker")
+                elif e.code() == grpc.StatusCode.NOT_FOUND:
+                    print(f"[Heartbeat] Worker aún no registrado, reintentando...")
                 else:
                     print(f"[Heartbeat] Error gRPC: {e.code()} - {e.details()}")
                 self.stop_event.set()
