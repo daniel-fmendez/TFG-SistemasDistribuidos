@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package dataset;
+
+service DatasetService {
+  rpc DownloadDataset(DatasetRequest) returns (stream DatasetChunk);
+}
+
+message DatasetRequest {
+    string worker_id = 1;
+}
+
+message DatasetChunk {
+    bytes data = 1;
+    int32 chunk_index = 2;
+    bool is_last = 3;
+}

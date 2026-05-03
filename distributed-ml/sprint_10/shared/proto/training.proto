@@ -1,0 +1,87 @@
+syntax = "proto3";
+
+package training;
+
+service TrainingService {
+  rpc RegisterWorker(WorkerStartRequest) returns (StartResponse);
+  rpc GetInitialWeights(WeightRequest) returns (stream WeightChunk);
+  rpc PushWeights(stream WeightChunk) returns (Ack);
+  rpc GetUpdatedWeights(WeightRequest) returns (stream WeightChunk);
+  rpc ReportEpochStart(StartRequest) returns (Ack);
+  rpc ReportMetrics(MetricData) returns (Ack);
+  rpc FinishTraining(FinishRequest) returns (Ack);
+  rpc CheckRebalance(WorkerRequest) returns (RebalanceResponse);
+  rpc SyncEpoch(EpochSyncRequest) returns (Ack);
+  rpc ReportSyncMetrics(SyncDuration) returns (Ack);
+}
+
+message WorkerRequest {
+  string worker_id = 1;
+}
+message WorkerStartRequest {
+  string worker_id = 1;
+  bool is_remote = 2;
+}
+message StartResponse {
+  bool ready = 1;
+  int32 start = 2;
+  int32 end = 3;
+  int32 report_step = 4;
+  int32 worker_index = 5;
+}
+
+message Ack {
+  bool success = 1;
+  string message = 2;
+}
+
+message MetricData {
+  string worker_id = 1;
+  int32 epoch = 2;
+  int32 step = 3;
+  float loss = 4;
+  float accuracy = 5;
+  double timestamp = 6;
+}
+message FinishRequest {
+  string worker_id = 1;
+}
+
+message WeightRequest {
+  string worker_id = 1;
+  int32 epoch      = 2;
+}
+
+message WeightChunk {
+  bytes  data        = 1;
+  int32  chunk_index = 2;
+  bool   is_last     = 3;
+  string worker_id   = 4;
+  int32  step        = 5;
+}
+
+message RebalanceResponse {
+  bool rebalanced = 1;
+  bool pause = 2;
+  int32 new_start = 3;
+  int32 new_end = 4;
+}
+
+message EpochSyncRequest {
+  string worker_id = 1;
+  int32 epoch = 2;
+  double timestamp = 3;
+  int32 total_samples = 4;
+}
+
+message StartRequest {
+  string worker_id = 1;
+  int32 epoch = 2;
+  double timestamp = 3;
+}
+
+message SyncDuration {
+  string worker_id = 1;
+  int64 last_bytes_sent = 2;
+  double last_sync_duration = 3;
+}
