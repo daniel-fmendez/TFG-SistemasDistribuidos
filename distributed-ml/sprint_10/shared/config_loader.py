@@ -12,12 +12,13 @@ class TrainingConfig:
         # Model
         self.model_type = raw["model"]["type"]
         self.model_name = raw["model"]["name"]
-        self.num_labels = int(raw["model"]["num_labels"])
+        
 
         # Dataset
         self.dataset_name = raw["dataset"]["name"]
         self.dataset_path = raw["dataset"]["path"]
         self.total_samples = int(raw["dataset"]["total_samples"])
+        self.num_labels = int(raw["dataset"]["num_labels"])
         self.split = raw["dataset"]["split"]
 
         # Training

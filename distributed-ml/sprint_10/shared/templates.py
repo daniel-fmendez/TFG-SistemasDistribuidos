@@ -81,7 +81,6 @@ def get_worker_job_template(worker_id, master_host, master_port, pvc_name, worke
 
     if worker_type == "remote":
         env_vars.append({"name": "IS_REMOTE", "value": "true"})
-        env_vars.append({"name": "SYNC_EVERY_OVERRIDE", "value": "250"})
         
     if worker_type in ("lan", "remote"):
         dns_policy = "None"
