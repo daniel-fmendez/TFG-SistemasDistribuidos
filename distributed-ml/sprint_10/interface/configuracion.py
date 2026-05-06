@@ -5,10 +5,8 @@ st.header("Configuración")
 st.caption("Edita y guarda config.yaml")
 
 # SI HAY CAMBIOS MOSTRAR CAJA
-cambios = True
-if cambios:
-    st.warning("Cambios sin guardar!", icon="⚠️")
-
+guardar = st.button("Guardar config.yaml", type="primary")
+st.warning("Cambios sin guardar", icon="⚠️")
 
 col1, col2 = st.columns(2)
 with col1: 
@@ -34,9 +32,8 @@ with col1:
 
     worker_cont = st.container(border=True)
     NODOS = [
-        {"nombre": "daniel-asus", "ip": "192.168.1.129", "tipo": "local"},
-        {"nombre": "daniserver",  "ip": "192.168.1.10",  "tipo": "lan"},
-        {"nombre": "danfer-vm1",  "ip": "***REMOVED***",       "tipo": "remoto"},
+        {"nombre": k, "ip": v["ip"], "tipo": v["tipo"]}
+        for k, v in st.session_state.nodos.items()
     ]
 
     with worker_cont:
@@ -156,7 +153,8 @@ with yaml_cont:
 
     st.code(formatted_yaml, language="yaml")
 
-    if st.button("Guardar config.yaml"):
+    if guardar:
         with open("config.yaml", "w") as f:
             yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
-        st.success("Guardado en config.yaml")
+        st.success("✅ Guardado en config.yaml")
+

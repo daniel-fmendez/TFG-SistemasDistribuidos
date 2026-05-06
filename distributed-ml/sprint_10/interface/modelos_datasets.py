@@ -158,6 +158,8 @@ with model_tab:
 
                 with head_col:
                     st.subheader(f"{name}")
+                    is_vision = info["type"] in ["resnet18", "mobilenet", "vit"]
+                    st.badge("Imagen" if is_vision else "Texto", color="blue" if is_vision else "green")
                     st.caption(f"{info['type']}")
 
                 st.write(f"{info['description']}")
