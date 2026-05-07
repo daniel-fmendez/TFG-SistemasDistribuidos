@@ -1,10 +1,12 @@
 import streamlit as st
+from styles import inject_styles
 
 st.set_page_config(
         layout="wide",
         initial_sidebar_state="expanded",
         page_title="DistML Panel",
     )
+inject_styles()
 pages = [
     st.Page("dashboard.py", title="Dashboard"),
     st.Page("nodos.py", title="Nodos"),

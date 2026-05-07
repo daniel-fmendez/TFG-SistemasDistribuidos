@@ -1,4 +1,5 @@
 import streamlit as st
+from styles import worker_row, log_line, pipeline_fases
 
 st.header("Lanzar")
 st.caption("Build, deploy y seguimiento del entrenamiento")
@@ -23,44 +24,29 @@ FASE_ACTUAL = 3
 with st.container(border=True):
     h1, h2 = st.columns([8, 1])
     h1.markdown("#### Fases del despliegue")
-    h2.caption("#### 00:03:42")
+    h2.caption("⏱ 00:03:42")
 
-    # Barra de progreso
-    progreso = FASE_ACTUAL / (len(FASES) - 1)
-    st.progress(progreso)
-
-    # Etiquetas de fases
-    cols = st.columns(len(FASES))
-    for i, (col, fase) in enumerate(zip(cols, FASES)):
-        if i < FASE_ACTUAL:
-            col.markdown(f"✅ **{str.capitalize(fase)}**")
-        elif i == FASE_ACTUAL:
-            col.markdown(f"⏳ **{str.capitalize(fase)}**")
-        else:
-            col.caption(str.capitalize(fase))
+    pipeline_fases(FASES, FASE_ACTUAL)
 
     st.info("Esperando registro de workers… 3 / 5 listos", icon="⏳")
 
 
 log_col, state_col = st.columns(2, gap="large")
 
-MOCK_LOGS = [
-    ("09:12:01", "dataset-init-local completado"),
-    ("09:12:03", "dataset-init-lan completado"),
-    ("09:12:11", "master job lanzado"),
-    ("09:12:14", "master service NodePort :30051"),
-    ("09:12:17", "worker-0 creado  (daniel-asus)"),
-    ("09:12:17", "worker-1 creado  (daniel-asus)"),
-    ("09:12:20", "worker-2 creado  (daniserver)"),
-    ("09:12:20", "worker-3 creado  (daniserver)"),
-    ("09:12:43", "worker-4 pendiente (danfer-vm1)"),
-]
+
 
 with log_col:
     st.markdown("#### Log en vivo")
     with st.container(border=True, height=360):
-        for ts, msg in MOCK_LOGS:
-            st.markdown(f"`{ts}` {msg}")
+        log_line("09:12:01", "dataset-init-local completado", "ok")
+        log_line("09:12:03", "dataset-init-lan completado", "ok")
+        log_line("09:12:11", "master job lanzado", "ok")
+        log_line("09:12:14", "master service NodePort :30051", "ok")
+        log_line("09:12:17", "worker-0 creado  (daniel-asus)", "ok")
+        log_line("09:12:17", "worker-1 creado  (daniel-asus)", "ok")
+        log_line("09:12:20", "worker-2 creado  (daniserver)", "ok")
+        log_line("09:12:20", "worker-3 creado  (daniserver)", "ok")
+        log_line("09:12:43", "worker-4 pendiente (danfer-vm1)", "warn")
 
 MOCK_WORKERS = [
     ("worker-0", "daniel-asus", "local",  "registrado", "0/10", "—"),
@@ -74,12 +60,7 @@ with state_col:
     st.markdown("#### Estado de workers")
     with st.container(border=True, height=360):
         for wname, nodo, tipo, estado, epoch, loss in MOCK_WORKERS:
-            with st.container(border=True):
-                c1, c2, c3 = st.columns([2, 2, 2])
-                c1.markdown(f"**{wname}**  \n`{nodo}` · {tipo}")
-                badge_color = "green" if estado == "registrado" else "orange"
-                c2.badge(estado, color=badge_color)
-                c3.caption(f"epoch {epoch}  ·  loss {loss}")
+            worker_row(wname, nodo, tipo, estado, epoch, loss)
 
 st.subheader("Resultado del último entrenamiento", divider=True)
 
