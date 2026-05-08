@@ -1,0 +1,67 @@
+{
+    "datasets": {
+        "CIFAR-10": {
+            "type": "image_classification",
+            "num_labels": 10,
+            "hf_name": "cifar10",
+            "label_column": "label"
+        },
+        "SST-2": {
+            "type": "text_classification",
+            "num_labels": 2,
+            "hf_name": "sst2",
+            "label_column": "label",
+            "subset": "sst2",
+            "text_column": "sentence",
+            "tokenizer": "bert-base-uncased"
+        },
+        "IMDB": {
+            "type": "text_classification",
+            "num_labels": 2,
+            "hf_name": "imdb",
+            "label_column": "label",
+            "text_column": "text",
+            "tokenizer": "distilbert-base-uncased"
+        },
+        "AG News": {
+            "type": "text_classification",
+            "num_labels": 4,
+            "hf_name": "ag_news",
+            "label_column": "label",
+            "text_column": "text",
+            "tokenizer": "distilbert-base-uncased"
+        }
+    },
+    "models": {
+        "ResNet-50": {
+            "name": "resnet50",
+            "type": "image",
+            "description": "Más profunda que la 18, estándar para obtener alta precisión en imágenes."
+        },
+        "ResNet-18": {
+            "name": "resnet18",
+            "type": "image",
+            "description": "Un estandar de reconocimiento de imágenes básico."
+        },
+        "RoBERTa-Base": {
+            "name": "roberta-base",
+            "type": "text",
+            "description": "Versión optimizada de BERT para mejor precisión en clasificación."
+        },
+        "DeBERTa-V3": {
+            "name": "microsoft/deberta-v3-small",
+            "type": "text",
+            "description": "Modelo de lenguaje avanzado con atención mejorada para tareas de NLP."
+        },
+        "MobileNet-V3": {
+            "name": "mobilenet_v3_small",
+            "type": "text",
+            "description": "Optimizado específicamente para entornos con recursos limitados."
+        },
+        "ViT-B16": {
+            "name": "vit_b_16",
+            "type": "text",
+            "description": "Vision Transformer; procesa imágenes mediante parches de atención."
+        }
+    }
+}

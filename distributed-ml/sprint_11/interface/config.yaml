@@ -1,0 +1,40 @@
+model:
+  type: "resnet18"
+  name: "resnet18"
+
+dataset:
+  name: "cifar10"
+  path: "/data/train"
+  total_samples: 50000
+  num_labels: 10
+  split: "train"
+
+training:
+  seed: 42
+  epochs: 15
+  batch_size: 64
+  micro_batch_size: 32
+  sync_every: 5
+  sync_every_early: 2
+  learning_rate: 5e-4
+  report_step: 50
+  aggregation_strategy: "fed_avg" # fed_avg, fed_median, fed_trimmed_mean
+  compression_strategy: "top_k" # none, quantization, top_k
+  quantization_bits: 16
+  top_k_ratio: 0.1
+
+workers:
+  num_local_workers: 2
+  num_lan_workers: 2
+  num_remote_workers: 0
+  remote_shard_ratio: 0.3
+  master_host: "master-service"
+  master_ip: "***REMOVED***"
+  master_port: 50051
+  pvc_name: "local-pvc"
+  lan_pvc_name: "lan-pvc"
+  remote_pvc_name: "remote-pvc"
+
+heartbeat:
+  interval: 15
+  multiplier: 4
